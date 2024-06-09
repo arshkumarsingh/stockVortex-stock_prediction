@@ -10,7 +10,6 @@ from datetime import date
 import numpy as np
 from time import sleep
 import logging
-import sqlite3
 import requests
 
 # Set up logging
@@ -21,48 +20,6 @@ logger = logging.getLogger(__name__)
 @st.cache
 def fetch_cached_data(ticker, start_date, end_date):
     return fetch_data(ticker, start_date, end_date)
-
-def create_database():
-    conn = sqlite3.connect('stocks.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS stock_data (
-            ticker TEXT,
-            date TEXT,
-            open REAL,
-            high REAL,
-            low REAL,
-            close REAL,
-            volume INTEGER
-        )
-    ''')
-    conn.commit()
-    return conn
-
-def save_to_database(conn, data, ticker):
-    cursor = conn.cursor()
-    for _, row in data.iterrows():
-        try:
-            cursor.execute('''
-                INSERT INTO stock_data (ticker, date, open, high, low, close, volume) VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (ticker, row['Date'].strftime('%Y-%m-%d'), row['Open'], row['High'], row['Low'], row['Close'], row['Volume']))
-        except sqlite3.ProgrammingError as e:
-            logger.error(f"Error inserting row: {row} - {e}")
-            st.error(f"Error inserting row: {row} - {e}")
-    conn.commit()
-
-def load_from_database(conn, ticker, start_date, end_date):
-    cursor = conn.cursor()
-    query = '''
-        SELECT * FROM stock_data WHERE ticker = ? AND date BETWEEN ? AND ?
-    '''
-    cursor.execute(query, (ticker, start_date, end_date))
-    rows = cursor.fetchall()
-    if rows:
-        columns = ['ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume']
-        data = pd.DataFrame(rows, columns=columns)
-        return data
-    return pd.DataFrame()
 
 def main():
     if 'disclaimer_accepted' not in st.session_state:
@@ -102,11 +59,7 @@ def render_main_page():
             st.error("End date must be after start date.")
         else:
             with st.spinner('Fetching data...'):
-                conn = create_database()
-                data = load_from_database(conn, ticker, start_date, end_date)
-                if data.empty:
-                    data = fetch_cached_data(ticker, start_date, end_date)
-                    save_to_database(conn, data, ticker)
+                data = fetch_cached_data(ticker, start_date, end_date)
                 sleep(2)  # simulate time delay for fetching data
             
             if not data.empty:
