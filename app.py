@@ -39,7 +39,7 @@ def main():
         st.image("https://thechainsaw.com/wp-content/uploads/2023/05/pepe-cover.jpg")
         
         start_date, end_date, ticker = user_inputs()
-        if st.button('Fetch Data'):
+        if st.button('Fetch Data', help="Click to fetch stock data for the selected parameters"):
             if start_date >= end_date:
                 st.error("End date must be after start date.")
             else:
@@ -86,10 +86,11 @@ def user_inputs():
     start_date, end_date = st.sidebar.slider(
         'Select date range',
         value=(date(2020, 1, 1), date(2020, 12, 31)),
-        format="YYYY-MM-DD"
+        format="YYYY-MM-DD",
+        help="Select the start and end dates for the stock data"
     )
     ticker_list = ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"]
-    ticker = st.sidebar.selectbox('Company', ticker_list)
+    ticker = st.sidebar.selectbox('Company', ticker_list, help="Select the company ticker symbol")
     return start_date, end_date, ticker
 
 def fetch_data(ticker, start_date, end_date):
@@ -133,12 +134,12 @@ def display_summary_statistics(data):
 def plot_data(data):
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Data Visualization</p>", unsafe_allow_html=True)
     st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Plot of the Data</p>", unsafe_allow_html=True)
-    fig = px.line(data, x='Date', y='Close', title='Closing price of the stock')
-    st.plotly_chart(fig)
+    fig = px.line(data, x='Date', y='Close', title='Closing price of the stock', labels={'Close': 'Close Price'})
+    st.plotly_chart(fig, use_container_width=True)
     st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Candlestick Chart</p>", unsafe_allow_html=True)
     fig_candlestick = go.Figure(data=[go.Candlestick(x=data['Date'], open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'])])
     fig_candlestick.update_layout(title='Candlestick Chart', xaxis_title='Date', yaxis_title='Price')
-    st.plotly_chart(fig_candlestick)
+    st.plotly_chart(fig_candlestick, use_container_width=True)
 
 def analyze_data(data):
     column = st.selectbox('Select column', data.columns[1:], help="Select the column to analyze")
@@ -155,9 +156,9 @@ def analyze_data(data):
     plot_decomposition(data, decomposition)
 
 def plot_decomposition(data, decomposition):
-    st.plotly_chart(px.line(x=data['Date'], y=decomposition.trend, title='Trend', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Blue'))
-    st.plotly_chart(px.line(x=data['Date'], y=decomposition.seasonal, title='Seasonality', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Green'))
-    st.plotly_chart(px.line(x=data['Date'], y=decomposition.resid, title='Residuals', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Red', line_dash='dot'))
+    st.plotly_chart(px.line(x=data['Date'], y=decomposition.trend, title='Trend', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Blue'), use_container_width=True)
+    st.plotly_chart(px.line(x=data['Date'], y=decomposition.seasonal, title='Seasonality', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Green'), use_container_width=True)
+    st.plotly_chart(px.line(x=data['Date'], y=decomposition.resid, title='Residuals', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Red', line_dash='dot'), use_container_width=True)
 
 def forecast(data, end_date):
     p = st.slider('Select value of p', 0, 5, 2, help="AR order")
@@ -170,11 +171,11 @@ def forecast(data, end_date):
     st.write(model.summary())
     st.write('---')
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Forecasting the Data</p>", unsafe_allow_html=True)
-    forecast_period = st.number_input('Select number of days for prediction', 1, 365, 10)
+    forecast_period = st.number_input('Select number of days for prediction', 1, 365, 10, help="Enter the number of days for which you want the prediction")
     predictions = model.get_prediction(start=len(data), end=len(data) + forecast_period - 1)
     predictions = predictions.predicted_mean
     predictions.index = pd.date_range(start=end_date, periods=len(predictions), freq='D')
-    predictions = pd.DataFrame(predictions)
+    predictions = pd.DataFrame(predictions, columns=['predicted_mean'])
     predictions.insert(0, 'Date', predictions.index)
     predictions.reset_index(drop=True, inplace=True)
     st.write('Predictions', predictions)
@@ -187,8 +188,8 @@ def plot_predictions(data, predictions):
     fig.add_trace(go.Scatter(x=data['Date'], y=data.iloc[:, 1], mode='lines', name='Actual', line=dict(color='blue')))
     fig.add_trace(go.Scatter(x=predictions['Date'], y=predictions['predicted_mean'], mode='lines', name='Predicted', line=dict(color='red')))
     fig.update_layout(title='Actual vs Predicted', xaxis_title='Date', yaxis_title='Price', width=800, height=400)
-    st.plotly_chart(fig)
-    show_plots = st.button('Show separate plots')
+    st.plotly_chart(fig, use_container_width=True)
+    show_plots = st.button('Show separate plots', help="Click to show the actual and predicted plots separately")
     if show_plots:
         st.write(px.line(x=data['Date'], y=data.iloc[:, 1], title='Actual', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Blue'))
         st.write(px.line(x=predictions['Date'], y=predictions['predicted_mean'], title='Predicted', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Red'))
@@ -219,21 +220,21 @@ def add_technical_indicators(data):
     fig.add_trace(go.Scatter(x=data['Date'], y=data['EMA'], mode='lines', name='EMA'))
     fig.add_trace(go.Scatter(x=data['Date'], y=data['Bollinger_Upper'], mode='lines', name='Bollinger Upper'))
     fig.add_trace(go.Scatter(x=data['Date'], y=data['Bollinger_Lower'], mode='lines', name='Bollinger Lower'))
-    st.plotly_chart(fig)
+    st.plotly_chart(fig, use_container_width=True)
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=data['Date'], y=data['RSI'], mode='lines', name='RSI'))
-    st.plotly_chart(fig)
+    st.plotly_chart(fig, use_container_width=True)
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=data['Date'], y=data['MACD'], mode='lines', name='MACD'))
     fig.add_trace(go.Scatter(x=data['Date'], y=data['Signal_Line'], mode='lines', name='Signal Line'))
-    st.plotly_chart(fig)
+    st.plotly_chart(fig, use_container_width=True)
 
 def portfolio_analysis():
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Portfolio Analysis</p>", unsafe_allow_html=True)
-    tickers = st.sidebar.multiselect('Select tickers for portfolio', ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"], ["AAPL", "MSFT"])
-    weights = st.sidebar.text_input('Enter weights for selected tickers', '0.5, 0.5', help="Enter weights separated by commas")
+    tickers = st.sidebar.multiselect('Select tickers for portfolio', ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"], ["AAPL", "MSFT"], help="Select the stocks you want to include in your portfolio")
+    weights = st.sidebar.text_input('Enter weights for selected tickers', '0.5, 0.5', help="Enter weights separated by commas (e.g., 0.5, 0.5)")
     weights = list(map(float, weights.split(',')))
     if len(weights) != len(tickers):
         st.write("Number of weights must match number of tickers selected.")
