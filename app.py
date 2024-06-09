@@ -11,10 +11,6 @@ import numpy as np
 from time import sleep
 import logging
 import sqlite3
-import auth0_component
-
-# Initialize Auth0 component
-auth0_component.init()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
@@ -70,14 +66,7 @@ def main():
     if not st.session_state['disclaimer_accepted']:
         show_disclaimer()
     else:
-        user_info = auth0_component.get_user_info()
-        if user_info:
-            st.sidebar.write(f"Hello, {user_info['name']}")
-            st.sidebar.button("Log out", on_click=auth0_component.logout)
-            render_main_page(user_info)
-        else:
-            st.write("Please log in to access the application.")
-            auth0_component.login_button()
+        render_main_page()
 
 def show_disclaimer():
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Disclaimer</p>", unsafe_allow_html=True)
@@ -90,7 +79,7 @@ def show_disclaimer():
         st.session_state['disclaimer_accepted'] = True
         st.experimental_rerun()
 
-def render_main_page(user_info):
+def render_main_page():
     st.markdown(
         """ <style> .font { font-size:50px ; font-weight: bold; font-family: 'Courier New'; color: #DB7093;} </style> """,
         unsafe_allow_html=True,
