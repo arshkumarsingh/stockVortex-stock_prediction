@@ -8,6 +8,7 @@ import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller
 from datetime import date
 import numpy as np
+from time import sleep
 
 def main():
     st.markdown(
@@ -22,19 +23,31 @@ def main():
     st.image("https://www.prococommodities.com/wp-content/uploads/2021/02/blog-03_1024x768_acf_cropped.jpg")
     
     start_date, end_date, ticker = user_inputs()
-    data = fetch_data(ticker, start_date, end_date)
+    if st.button('Fetch Data'):
+        with st.spinner('Fetching data...'):
+            data = fetch_data(ticker, start_date, end_date)
+            sleep(2)  # simulate time delay for fetching data
     
-    if not data.empty:
-        st.write(f'Data from {start_date} to {end_date}')
-        st.write(data)
-        plot_data(data)
-        analyze_data(data)
-        model_summary, predictions = forecast(data, end_date)
-        st.write(model_summary)
-        plot_predictions(data, predictions)
-        add_technical_indicators(data)
-        portfolio_analysis()
-        about_author()
+        if not data.empty:
+            st.success('Data fetched successfully!')
+            st.write(f'Data from {start_date} to {end_date}')
+            st.write(data)
+            st.download_button(
+                label="Download data as CSV",
+                data=data.to_csv().encode('utf-8'),
+                file_name=f'{ticker}_data.csv',
+                mime='text/csv',
+            )
+            plot_data(data)
+            analyze_data(data)
+            model_summary, predictions = forecast(data, end_date)
+            st.write(model_summary)
+            plot_predictions(data, predictions)
+            add_technical_indicators(data)
+            portfolio_analysis()
+        else:
+            st.error("No data found for the selected parameters.")
+    about_author()
 
 def user_inputs():
     st.sidebar.header('Parameters')
@@ -45,24 +58,29 @@ def user_inputs():
     return start_date, end_date, ticker
 
 def fetch_data(ticker, start_date, end_date):
-    data = yf.download(ticker, start=start_date, end=end_date)
-    data.insert(0, "Date", data.index, True)
-    data.reset_index(drop=True, inplace=True)
-    return data
+    try:
+        data = yf.download(ticker, start=start_date, end=end_date)
+        data.insert(0, "Date", data.index, True)
+        data.reset_index(drop=True, inplace=True)
+        return data
+    except Exception as e:
+        st.error(f"Error fetching data: {e}")
+        return pd.DataFrame()
 
 def plot_data(data):
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Data Visualization</p>", unsafe_allow_html=True)
     st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Plot of the Data</p>", unsafe_allow_html=True)
-    fig = px.line(data, x='Date', y=data.columns, title='Closing price of the stock')
+    fig = px.line(data, x='Date', y='Close', title='Closing price of the stock')
     st.plotly_chart(fig)
 
 def analyze_data(data):
-    column = st.selectbox('Select column', data.columns[1:])
+    column = st.selectbox('Select column', data.columns[1:], help="Select the column to analyze")
     data = data[['Date', column]]
     st.write('Selected Data')
     st.write(data)
     st.write('Data Stationarity')
-    st.write(adfuller(data[column])[1] < 0.05)
+    stationarity = adfuller(data[column])[1] < 0.05
+    st.write(f'Stationary: {stationarity}')
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Decomposition of Data</p>", unsafe_allow_html=True)
     decomposition = seasonal_decompose(data[column], model='additive', period=12)
     st.write(decomposition.plot())
@@ -75,10 +93,10 @@ def plot_decomposition(data, decomposition):
     st.plotly_chart(px.line(x=data['Date'], y=decomposition.resid, title='Residuals', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Red', line_dash='dot'))
 
 def forecast(data, end_date):
-    p = st.slider('Select value of p', 0, 5, 2)
-    d = st.slider('Select value of d', 0, 5, 1)
-    q = st.slider('Select value of q', 0, 5, 2)
-    seasonal_order = st.number_input('Select value of seasonal p', 0, 24, 12)
+    p = st.slider('Select value of p', 0, 5, 2, help="AR order")
+    d = st.slider('Select value of d', 0, 5, 1, help="Differencing order")
+    q = st.slider('Select value of q', 0, 5, 2, help="MA order")
+    seasonal_order = st.number_input('Select value of seasonal p', 0, 24, 12, help="Seasonal AR order")
     model = sm.tsa.statespace.SARIMAX(data.iloc[:, 1], order=(p, d, q), seasonal_order=(p, d, q, seasonal_order))
     model = model.fit()
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Model Summary</p>", unsafe_allow_html=True)
@@ -148,7 +166,7 @@ def add_technical_indicators(data):
 def portfolio_analysis():
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Portfolio Analysis</p>", unsafe_allow_html=True)
     tickers = st.sidebar.multiselect('Select tickers for portfolio', ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"], ["AAPL", "MSFT"])
-    weights = st.sidebar.text_input('Enter weights for selected tickers', '0.5, 0.5')
+    weights = st.sidebar.text_input('Enter weights for selected tickers', '0.5, 0.5', help="Enter weights separated by commas")
     weights = list(map(float, weights.split(',')))
     if len(weights) != len(tickers):
         st.write("Number of weights must match number of tickers selected.")
