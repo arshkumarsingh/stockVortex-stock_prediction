@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from statsmodels.tsa.seasonal import seasonal_decompose
 import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller
-from datetime import date
+from datetime import date, timedelta
 import numpy as np
 import logging
 
@@ -107,12 +107,29 @@ def render_main_page():
 
 def user_inputs():
     st.sidebar.header('Parameters')
-    start_date, end_date = st.sidebar.slider(
-        'Select date range',
-        value=(date(2020, 1, 1), date(2020, 12, 31)),
-        format="YYYY-MM-DD",
-        help="Select the start and end dates for the stock data"
-    )
+    
+    # Provide multiple default time periods
+    time_periods = {
+        '1 Month': (date.today() - timedelta(days=30), date.today()),
+        '3 Months': (date.today() - timedelta(days=90), date.today()),
+        '6 Months': (date.today() - timedelta(days=180), date.today()),
+        '1 Year': (date.today() - timedelta(days=365), date.today()),
+        'YTD': (date(date.today().year, 1, 1), date.today()),
+        'Max': (date(2000, 1, 1), date.today())  # Adjust max date as per the requirement
+    }
+    
+    selected_period = st.sidebar.selectbox('Select Time Period', list(time_periods.keys()), index=3)
+    start_date, end_date = time_periods[selected_period]
+    
+    custom_dates = st.sidebar.checkbox('Custom Date Range')
+    if custom_dates:
+        start_date, end_date = st.sidebar.date_input(
+            'Select date range',
+            value=(start_date, end_date),
+            format="YYYY-MM-DD",
+            help="Select the start and end dates for the stock data"
+        )
+
     ticker_list = ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"]
     ticker = st.sidebar.selectbox('Company', ticker_list, help="Select the company ticker symbol")
     return start_date, end_date, ticker
