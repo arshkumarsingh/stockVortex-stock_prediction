@@ -16,30 +16,83 @@ import requests  # Ensure requests module is imported
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# CSS for Apple-style UI
+apple_style = """
+    <style>
+        .font {
+            font-size:50px;
+            font-weight: bold;
+            font-family: 'Helvetica Neue', sans-serif;
+            color: #1D1D1F;
+        }
+        .subheader {
+            color: #1D1D1F;
+            font-size: 20px;
+            font-family: 'Helvetica Neue', sans-serif;
+            font-weight: normal;
+        }
+        .button {
+            background-color: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 12px;
+        }
+        .disclaimer {
+            color: #FF2D55;
+            font-size: 40px;
+            font-family: 'Helvetica Neue', sans-serif;
+            font-weight: bold;
+        }
+        .author {
+            color: #1D1D1F;
+            font-size: 30px;
+            font-family: 'Helvetica Neue', sans-serif;
+            font-weight: bold;
+        }
+        .author-name {
+            color: #007AFF;
+            font-size: 25px;
+            font-family: 'Helvetica Neue', sans-serif;
+            font-weight: bold;
+        }
+        .center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .container {
+            max-width: 700px;
+            margin: auto;
+        }
+    </style>
+"""
+
 @st.cache_data
 def fetch_cached_data(ticker, start_date, end_date):
     return fetch_data(ticker, start_date, end_date)
 
 def main():
+    st.markdown(apple_style, unsafe_allow_html=True)
     if 'disclaimer_accepted' not in st.session_state:
         st.session_state['disclaimer_accepted'] = False
 
     if not st.session_state['disclaimer_accepted']:
         show_disclaimer()
     else:
-        st.markdown(
-            """ <style> .font { font-size:50px ; font-weight: bold; font-family: 'Courier New'; color: #DB7093;} </style> """,
-            unsafe_allow_html=True,
-        )
-        st.markdown('<p class="font">StockVortex</p>', unsafe_allow_html=True)
-        st.write(
-            "<p style='color:LightPink ; font-size: 20px;font-family: Garamond ;font-weight: normal;'>Where stocks converge and profits swirl – welcome to StockVortex!</p>",
-            unsafe_allow_html=True,
-        )
-        st.image("https://thechainsaw.com/wp-content/uploads/2023/05/pepe-cover.jpg")
+        st.markdown('<div class="container"><p class="font center">StockVortex</p></div>', unsafe_allow_html=True)
+        st.markdown('<p class="subheader center">Where stocks converge and profits swirl – welcome to StockVortex!</p>', unsafe_allow_html=True)
+        st.image("https://thechainsaw.com/wp-content/uploads/2023/05/pepe-cover.jpg", use_column_width=True)
         
         start_date, end_date, ticker = user_inputs()
-        if st.button('Fetch Data', help="Click to fetch stock data for the selected parameters"):
+        if st.button('Fetch Data', help="Click to fetch stock data for the selected parameters", key="fetch_button", css_class="button"):
             if start_date >= end_date:
                 st.error("End date must be after start date.")
             else:
@@ -71,13 +124,13 @@ def main():
         about_author()
 
 def show_disclaimer():
-    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Disclaimer</p>", unsafe_allow_html=True)
+    st.markdown('<p class="disclaimer">Disclaimer</p>', unsafe_allow_html=True)
     st.write("""
         The information provided by StockVortex is for educational purposes only and should not be considered as financial advice.
         Trading stocks involves risk, and you should consult with a licensed financial advisor before making any investment decisions.
         StockVortex and its creators are not responsible for any financial losses you may incur.
     """)
-    if st.button("I Understand and Accept"):
+    if st.button("I Understand and Accept", css_class="button"):
         st.session_state['disclaimer_accepted'] = True
         st.experimental_rerun()
 
@@ -111,7 +164,7 @@ def display_stock_info(ticker):
         if not info:
             st.error("No stock information available.")
             return
-        st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Stock Information</p>", unsafe_allow_html=True)
+        st.write("<p style='color:#1D1D1F; font-size: 40px; font-family: Helvetica Neue;font-weight: bold;'>Stock Information</p>", unsafe_allow_html=True)
         st.write(f"**Company:** {info.get('shortName', 'N/A')}")
         st.write(f"**Sector:** {info.get('sector', 'N/A')}")
         st.write(f"**Industry:** {info.get('industry', 'N/A')}")
@@ -128,15 +181,15 @@ def display_stock_info(ticker):
         st.error(f"An error occurred while fetching stock information: {e}")
 
 def display_summary_statistics(data):
-    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Summary Statistics</p>", unsafe_allow_html=True)
+    st.write("<p style='color:#1D1D1F; font-size: 40px; font-family: Helvetica Neue;font-weight: bold;'>Summary Statistics</p>", unsafe_allow_html=True)
     st.write(data.describe())
 
 def plot_data(data):
-    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Data Visualization</p>", unsafe_allow_html=True)
-    st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Plot of the Data</p>", unsafe_allow_html=True)
+    st.write("<p style='color:#1D1D1F; font-size: 40px; font-family: Helvetica Neue;font-weight: bold;'>Data Visualization</p>", unsafe_allow_html=True)
+    st.write("<p style='color:#1D1D1F; font-size: 25px; font-family: Helvetica Neue;font-weight: normal;'>Plot of the Data</p>", unsafe_allow_html=True)
     fig = px.line(data, x='Date', y='Close', title='Closing price of the stock', labels={'Close': 'Close Price'})
     st.plotly_chart(fig, use_container_width=True)
-    st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Candlestick Chart</p>", unsafe_allow_html=True)
+    st.write("<p style='color:#1D1D1F; font-size: 25px; font-family: Helvetica Neue;font-weight: normal;'>Candlestick Chart</p>", unsafe_allow_html=True)
     fig_candlestick = go.Figure(data=[go.Candlestick(x=data['Date'], open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'])])
     fig_candlestick.update_layout(title='Candlestick Chart', xaxis_title='Date', yaxis_title='Price')
     st.plotly_chart(fig_candlestick, use_container_width=True)
@@ -149,7 +202,7 @@ def analyze_data(data):
     st.write('Data Stationarity')
     stationarity = adfuller(data[column])[1] < 0.05
     st.write(f'Stationary: {stationarity}')
-    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Decomposition of Data</p>", unsafe_allow_html=True)
+    st.write("<p style='color:#1D1D1F; font-size: 40px; font-family: Helvetica Neue;font-weight: bold;'>Decomposition of Data</p>", unsafe_allow_html=True)
     decomposition = seasonal_decompose(data[column], model='additive', period=12)
     st.write(decomposition.plot())
     st.write('Evaluating Plots')
@@ -167,10 +220,10 @@ def forecast(data, end_date):
     seasonal_order = st.number_input('Select value of seasonal p', 0, 24, 12, help="Seasonal AR order")
     model = sm.tsa.statespace.SARIMAX(data.iloc[:, 1], order=(p, d, q), seasonal_order=(p, d, q, seasonal_order))
     model = model.fit()
-    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Model Summary</p>", unsafe_allow_html=True)
+    st.write("<p style='color:#1D1D1F; font-size: 40px; font-family: Helvetica Neue;font-weight: bold;'>Model Summary</p>", unsafe_allow_html=True)
     st.write(model.summary())
     st.write('---')
-    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Forecasting the Data</p>", unsafe_allow_html=True)
+    st.write("<p style='color:#1D1D1F; font-size: 40px; font-family: Helvetica Neue;font-weight: bold;'>Forecasting the Data</p>", unsafe_allow_html=True)
     forecast_period = st.number_input('Select number of days for prediction', 1, 365, 10, help="Enter the number of days for which you want the prediction")
     predictions = model.get_prediction(start=len(data), end=len(data) + forecast_period - 1)
     predictions = predictions.predicted_mean
@@ -195,7 +248,7 @@ def plot_predictions(data, predictions):
         st.write(px.line(x=predictions['Date'], y=predictions['predicted_mean'], title='Predicted', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Red'))
 
 def add_technical_indicators(data):
-    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Technical Indicators</p>", unsafe_allow_html=True)
+    st.write("<p style='color:#1D1D1F; font-size: 40px; font-family: Helvetica Neue;font-weight: bold;'>Technical Indicators</p>", unsafe_allow_html=True)
     # Simple Moving Average
     data['SMA'] = data['Close'].rolling(window=20).mean()
     # Exponential Moving Average
@@ -232,7 +285,7 @@ def add_technical_indicators(data):
     st.plotly_chart(fig, use_container_width=True)
 
 def portfolio_analysis():
-    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Portfolio Analysis</p>", unsafe_allow_html=True)
+    st.write("<p style='color:#1D1D1F; font-size: 40px; font-family: Helvetica Neue;font-weight: bold;'>Portfolio Analysis</p>", unsafe_allow_html=True)
     tickers = st.sidebar.multiselect('Select tickers for portfolio', ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"], ["AAPL", "MSFT"], help="Select the stocks you want to include in your portfolio")
     weights = st.sidebar.text_input('Enter weights for selected tickers', '0.5, 0.5', help="Enter weights separated by commas (e.g., 0.5, 0.5)")
     weights = list(map(float, weights.split(',')))
@@ -254,8 +307,8 @@ def portfolio_analysis():
 
 def about_author():
     st.write("---")
-    st.write("<p style='color:HotPink ; font-size: 30px;font-family: Courier New; font-weight: bold;'>About the Author</p>", unsafe_allow_html=True)
-    st.write("<p style='color:LightPink; font-size: 25px; font-family: Georgia;font-weight: bold;'>Shelly Bhalla</p>", unsafe_allow_html=True)
+    st.write("<div class='container'><p class='author'>About the Author</p></div>", unsafe_allow_html=True)
+    st.write("<p class='author-name'>Shelly Bhalla</p>", unsafe_allow_html=True)
     linkedin_url = "https://www.linkedin.com/in/shelly-bhalla-58a7271b6"
     github_url = "https://github.com/Shellybhalla13"
     linkedin_icon = "https://static.vecteezy.com/system/resources/previews/017/339/624/original/linkedin-icon-free-png.png"
