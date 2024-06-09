@@ -64,6 +64,7 @@ def main():
                     plot_predictions(data, predictions)
                     add_technical_indicators(data)
                     portfolio_analysis()
+                    explain_sarimax_results(model_summary)
                 else:
                     st.error("No data found for the selected parameters.")
             about_author()
@@ -298,6 +299,30 @@ def portfolio_analysis():
     except Exception as e:
         logger.error(f"Error in portfolio analysis: {e}")
         st.error(f"Error in portfolio analysis: {e}")
+
+def explain_sarimax_results(summary):
+    try:
+        st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>SARIMAX Model Explanation</p>", unsafe_allow_html=True)
+        st.write("<p style='color:LightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Interpreting the SARIMAX Model Results</p>", unsafe_allow_html=True)
+
+        st.write("""
+            The SARIMAX (Seasonal AutoRegressive Integrated Moving Average with eXogenous regressors) model summary provides several key pieces of information:
+
+            - **Log-Likelihood**: A higher value indicates a better fit of the model to the data.
+            - **AIC (Akaike Information Criterion)**: Used for model comparison. Lower values indicate a better fit.
+            - **BIC (Bayesian Information Criterion)**: Similar to AIC but penalizes model complexity more strongly. Lower values indicate a better fit.
+            - **Coefficients**: Represent the relationship between the variables and the time series. Significant coefficients (p-values < 0.05) indicate a meaningful relationship.
+            - **P-values**: Used to determine the significance of the coefficients. P-values below 0.05 typically indicate statistical significance.
+            - **Standard Errors**: Measure the accuracy of the coefficients' estimates. Lower values indicate more precise estimates.
+
+            **Conclusion**:
+            - If the model has low AIC and BIC values, and the p-values of the coefficients are significant, the model is likely a good fit.
+            - The residuals (errors) should be randomly distributed (check residual plots) for the model to be reliable.
+            - Use the model to forecast future values and compare them to actual data to validate the model's predictive power.
+        """)
+    except Exception as e:
+        logger.error(f"Error explaining SARIMAX results: {e}")
+        st.error(f"Error explaining SARIMAX results: {e}")
 
 def about_author():
     try:
