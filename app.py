@@ -1,4 +1,3 @@
-# removed some unecessary dependencies
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -8,6 +7,7 @@ from statsmodels.tsa.seasonal import seasonal_decompose
 import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller
 from datetime import date
+import numpy as np
 
 def main():
     st.markdown(
@@ -20,7 +20,6 @@ def main():
         unsafe_allow_html=True,
     )
     st.image("https://www.prococommodities.com/wp-content/uploads/2021/02/blog-03_1024x768_acf_cropped.jpg")
-    
     # handling very dangerous user inputs
     start_date, end_date, ticker = user_inputs()
     data = fetch_data(ticker, start_date, end_date)
@@ -33,8 +32,9 @@ def main():
         model_summary, predictions = forecast(data, end_date)
         st.write(model_summary)
         plot_predictions(data, predictions)
+        add_technical_indicators(data)
+        portfolio_analysis()
         about_author()
-
 # supposed to handle inputs from the sidebar
 def user_inputs():
     st.sidebar.header('Parameters')
@@ -43,7 +43,6 @@ def user_inputs():
     ticker_list = ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"]
     ticker = st.sidebar.selectbox('Company', ticker_list)
     return start_date, end_date, ticker
-
 # very easy part using the data taken earlier to fetch inputs
 def fetch_data(ticker, start_date, end_date):
     data = yf.download(ticker, start=start_date, end=end_date)
@@ -51,14 +50,12 @@ def fetch_data(ticker, start_date, end_date):
     data.reset_index(drop=True, inplace=True)
     return data
 
-# usual function just plotting data
 def plot_data(data):
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Data Visualization</p>", unsafe_allow_html=True)
     st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Plot of the Data</p>", unsafe_allow_html=True)
     fig = px.line(data, x='Date', y=data.columns, title='Closing price of the stock')
     st.plotly_chart(fig)
 
-# very simple
 def analyze_data(data):
     column = st.selectbox('Select column', data.columns[1:])
     data = data[['Date', column]]
@@ -71,7 +68,6 @@ def analyze_data(data):
     st.write(decomposition.plot())
     st.write('Evaluating Plots')
     plot_decomposition(data, decomposition)
-
 # very intersting stuff, the initial code incorrectly used the trend component for all decomposition plots,
 # this revised code correctly plots the trend, seasonality, and residuals separately. Special thanks to people at JP
 def plot_decomposition(data, decomposition):
@@ -79,7 +75,6 @@ def plot_decomposition(data, decomposition):
     st.plotly_chart(px.line(x=data['Date'], y=decomposition.seasonal, title='Seasonality', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Green'))
     st.plotly_chart(px.line(x=data['Date'], y=decomposition.resid, title='Residuals', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Red', line_dash='dot'))
 
-# new sliders to select model params(p,d,q) etc
 def forecast(data, end_date):
     p = st.slider('Select value of p', 0, 5, 2)
     d = st.slider('Select value of d', 0, 5, 1)
@@ -102,7 +97,6 @@ def forecast(data, end_date):
     st.write('Actual Data', data)
     st.write('---')
     return model.summary(), predictions
-
 # using some functions of plotly(go and px) plots are interactive
 def plot_predictions(data, predictions):
     fig = go.Figure()
@@ -115,7 +109,64 @@ def plot_predictions(data, predictions):
         st.write(px.line(x=data['Date'], y=data.iloc[:, 1], title='Actual', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Blue'))
         st.write(px.line(x=predictions['Date'], y=predictions['predicted_mean'], title='Predicted', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Red'))
 
-# this part should be left to shelly only aur new clickable buttons
+def add_technical_indicators(data):
+    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Technical Indicators</p>", unsafe_allow_html=True)
+    # Simple Moving Average
+    data['SMA'] = data['Close'].rolling(window=20).mean()
+    # Exponential Moving Average
+    data['EMA'] = data['Close'].ewm(span=20, adjust=False).mean()
+    # Bollinger Bands
+    data['Bollinger_Upper'] = data['SMA'] + 2*data['Close'].rolling(window=20).std()
+    data['Bollinger_Lower'] = data['SMA'] - 2*data['Close'].rolling(window=20).std()
+    # RSI
+    delta = data['Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+    RS = gain / loss
+    data['RSI'] = 100 - (100 / (1 + RS))
+    # MACD
+    data['MACD'] = data['Close'].ewm(span=12, adjust=False).mean() - data['Close'].ewm(span=26, adjust=False).mean()
+    data['Signal_Line'] = data['MACD'].ewm(span=9, adjust=False).mean()
+
+    # Plotting the indicators
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['Close'], mode='lines', name='Close Price'))
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['SMA'], mode='lines', name='SMA'))
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['EMA'], mode='lines', name='EMA'))
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['Bollinger_Upper'], mode='lines', name='Bollinger Upper'))
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['Bollinger_Lower'], mode='lines', name='Bollinger Lower'))
+    st.plotly_chart(fig)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['RSI'], mode='lines', name='RSI'))
+    st.plotly_chart(fig)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['MACD'], mode='lines', name='MACD'))
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['Signal_Line'], mode='lines', name='Signal Line'))
+    st.plotly_chart(fig)
+
+def portfolio_analysis():
+    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Portfolio Analysis</p>", unsafe_allow_html=True)
+    tickers = st.sidebar.multiselect('Select tickers for portfolio', ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"], ["AAPL", "MSFT"])
+    weights = st.sidebar.text_input('Enter weights for selected tickers', '0.5, 0.5')
+    weights = list(map(float, weights.split(',')))
+    if len(weights) != len(tickers):
+        st.write("Number of weights must match number of tickers selected.")
+        return
+
+    data = yf.download(tickers, start="2020-01-01", end="2021-01-01")['Close']
+    data = data.pct_change().dropna()
+    portfolio_return = (data * weights).sum(axis=1)
+    cumulative_return = (1 + portfolio_return).cumprod() - 1
+
+    st.write("Cumulative Portfolio Return:")
+    st.line_chart(cumulative_return)
+
+    st.write("Risk Metrics:")
+    st.write("Sharpe Ratio:", np.mean(portfolio_return) / np.std(portfolio_return))
+    st.write("Value at Risk (5%):", np.percentile(portfolio_return, 5))
+
 def about_author():
     st.write("---")
     st.write("<p style='color:HotPink ; font-size: 30px;font-family: Courier New; font-weight: bold;'>About the Author</p>", unsafe_allow_html=True)
@@ -129,7 +180,6 @@ def about_author():
         f'<a href="{linkedin_url}"><img src="{linkedin_icon}" width="60" height="60"></a>',
         unsafe_allow_html=True,
     )
-
 # good to have boilerplate
 if __name__ == "__main__":
     main()
