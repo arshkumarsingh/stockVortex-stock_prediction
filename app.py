@@ -8,8 +8,6 @@ import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller
 from datetime import datetime, date, timedelta
 import numpy as np
-import asyncio
-import aiohttp
 import logging
 
 # Set up logging
@@ -44,7 +42,7 @@ def main():
         
         if st.button('Fetch Data'):
             with st.spinner('Fetching data...'):
-                data = asyncio.run(fetch_data(ticker, start_date, end_date))
+                data = fetch_data(ticker, start_date, end_date)
         
             if not data.empty:
                 st.success('Data fetched successfully!')
@@ -92,24 +90,15 @@ def user_inputs():
     custom_ticker = st.sidebar.text_input('Or enter a custom ticker (overrides selection above)', value='')
     return start_date, end_date, ticker, custom_ticker
 
-async def fetch_data(ticker, start_date, end_date):
-    async with aiohttp.ClientSession() as session:
-        try:
-            start_timestamp = int(datetime.combine(start_date, datetime.min.time()).timestamp())
-            end_timestamp = int(datetime.combine(end_date, datetime.min.time()).timestamp())
-            url = f"https://query1.finance.yahoo.com/v7/finance/download/{ticker}?period1={start_timestamp}&period2={end_timestamp}&interval=1d&events=history"
-            async with session.get(url) as response:
-                if response.status != 200:
-                    logger.error(f"Error fetching data: {response.status}")
-                    st.error(f"Error fetching data: {response.status}")
-                    return pd.DataFrame()
-                data = await response.text()
-                data = pd.read_csv(pd.compat.StringIO(data))
-                return data
-        except Exception as e:
-            logger.error(f"Error fetching data: {e}")
-            st.error(f"Error fetching data: {e}")
-            return pd.DataFrame()
+def fetch_data(ticker, start_date, end_date):
+    try:
+        data = yf.download(ticker, start=start_date, end=end_date)
+        data.reset_index(inplace=True)
+        return data
+    except Exception as e:
+        logger.error(f"Error fetching data: {e}")
+        st.error(f"Error fetching data: {e}")
+        return pd.DataFrame()
 
 def display_stock_info(ticker):
     try:
