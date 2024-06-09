@@ -66,7 +66,7 @@ def main():
                     plot_predictions(data, predictions)
                     add_technical_indicators(data)
                     portfolio_analysis()
-                    risk_analysis(data)
+                    risk_analysis(data, start_date, end_date)
                     dividend_analysis(ticker)
                     economic_indicators()
                     news_sentiment_analysis(ticker)
@@ -258,19 +258,21 @@ def portfolio_analysis():
     st.write("Sharpe Ratio:", np.mean(portfolio_return) / np.std(portfolio_return))
     st.write("Value at Risk (5%):", np.percentile(portfolio_return, 5))
 
-def risk_analysis(data):
+def risk_analysis(data, start_date, end_date):
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Risk Analysis</p>", unsafe_allow_html=True)
     returns = data['Close'].pct_change().dropna()
-    beta, alpha = calculate_beta_alpha(returns)
+    beta, alpha = calculate_beta_alpha(returns, start_date, end_date)
     st.write(f"**Beta:** {beta}")
     st.write(f"**Alpha:** {alpha}")
     st.write("**Sortino Ratio:**", np.mean(returns) / np.std(returns[returns < 0]))
 
-def calculate_beta_alpha(returns):
-    market_data = yf.download('SPY', start=returns.index.min(), end=returns.index.max())['Close'].pct_change().dropna()
-    covariance = np.cov(returns, market_data)[0][1]
-    beta = covariance / np.var(market_data)
-    alpha = np.mean(returns) - beta * np.mean(market_data)
+def calculate_beta_alpha(returns, start_date, end_date):
+    market_data = yf.download('SPY', start=start_date, end=end_date)['Close'].pct_change().dropna()
+    combined_data = pd.concat([returns, market_data], axis=1).dropna()
+    combined_data.columns = ['Stock', 'Market']
+    covariance = np.cov(combined_data['Stock'], combined_data['Market'])[0][1]
+    beta = covariance / np.var(combined_data['Market'])
+    alpha = np.mean(combined_data['Stock']) - beta * np.mean(combined_data['Market'])
     return beta, alpha
 
 def dividend_analysis(ticker):
