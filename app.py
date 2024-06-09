@@ -11,13 +11,14 @@ import numpy as np
 from time import sleep
 import logging
 import sqlite3
+import requests
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
                     format='%(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-@st.cache_data
+@st.cache
 def fetch_cached_data(ticker, start_date, end_date):
     return fetch_data(ticker, start_date, end_date)
 
