@@ -24,6 +24,7 @@ def fetch_data(ticker, start_date, end_date):
     while retry_count < max_retries:
         try:
             st.write(f"Fetching data for ticker: {ticker}, Start date: {start_date}, End date: {end_date}")
+            logger.info(f"Fetching data for ticker: {ticker}, Start date: {start_date}, End date: {end_date}")
             data = yf.download(ticker, start=start_date, end=end_date)
             if data.empty:
                 raise ValueError(f"No data found for ticker: {ticker} in the specified date range.")
@@ -34,8 +35,9 @@ def fetch_data(ticker, start_date, end_date):
             retry_count += 1
             logger.error(f"Error fetching data for ticker: {ticker} - {e}. Retry {retry_count} of {max_retries}.")
             st.write(f"Error fetching data for ticker: {ticker} - {e}. Retry {retry_count} of {max_retries}.")
-            time.sleep(2)
+            time.sleep(5)  # Wait for 5 seconds before retrying
     st.error(f"Failed to fetch data for ticker: {ticker} in the specified date range.")
+    logger.error(f"Failed to fetch data for ticker: {ticker} in the specified date range after {max_retries} retries.")
     return pd.DataFrame()
 
 def main():
