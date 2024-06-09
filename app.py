@@ -9,6 +9,7 @@ from statsmodels.tsa.stattools import adfuller
 from datetime import date
 import numpy as np
 from time import sleep
+import requests
 
 def main():
     st.markdown(
@@ -73,17 +74,22 @@ def fetch_data(ticker, start_date, end_date):
         return pd.DataFrame()
 
 def display_stock_info(ticker):
-    stock = yf.Ticker(ticker)
-    info = stock.info
-    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Stock Information</p>", unsafe_allow_html=True)
-    st.write(f"**Company:** {info['shortName']}")
-    st.write(f"**Sector:** {info['sector']}")
-    st.write(f"**Industry:** {info['industry']}")
-    st.write(f"**Market Cap:** {info['marketCap']:,}")
-    st.write(f"**Previous Close:** {info['previousClose']}")
-    st.write(f"**Open:** {info['open']}")
-    st.write(f"**Day's Range:** {info['dayLow']} - {info['dayHigh']}")
-    st.write(f"**52 Week Range:** {info['fiftyTwoWeekLow']} - {info['fiftyTwoWeekHigh']}")
+    try:
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Stock Information</p>", unsafe_allow_html=True)
+        st.write(f"**Company:** {info['shortName']}")
+        st.write(f"**Sector:** {info['sector']}")
+        st.write(f"**Industry:** {info['industry']}")
+        st.write(f"**Market Cap:** {info['marketCap']:,}")
+        st.write(f"**Previous Close:** {info['previousClose']}")
+        st.write(f"**Open:** {info['open']}")
+        st.write(f"**Day's Range:** {info['dayLow']} - {info['dayHigh']}")
+        st.write(f"**52 Week Range:** {info['fiftyTwoWeekLow']} - {info['fiftyTwoWeekHigh']}")
+    except requests.exceptions.HTTPError as http_err:
+        st.error(f"HTTP error occurred: {http_err}")
+    except Exception as e:
+        st.error(f"An error occurred while fetching stock information: {e}")
 
 def display_summary_statistics(data):
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Summary Statistics</p>", unsafe_allow_html=True)
