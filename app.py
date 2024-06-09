@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from statsmodels.tsa.seasonal import seasonal_decompose
 import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller
-from datetime import date
+from datetime import datetime, date, timedelta
 import numpy as np
 import asyncio
 import aiohttp
@@ -95,7 +95,9 @@ def user_inputs():
 async def fetch_data(ticker, start_date, end_date):
     async with aiohttp.ClientSession() as session:
         try:
-            url = f"https://query1.finance.yahoo.com/v7/finance/download/{ticker}?period1={int(start_date.timestamp())}&period2={int(end_date.timestamp())}&interval=1d&events=history"
+            start_timestamp = int(datetime.combine(start_date, datetime.min.time()).timestamp())
+            end_timestamp = int(datetime.combine(end_date, datetime.min.time()).timestamp())
+            url = f"https://query1.finance.yahoo.com/v7/finance/download/{ticker}?period1={start_timestamp}&period2={end_timestamp}&interval=1d&events=history"
             async with session.get(url) as response:
                 if response.status != 200:
                     logger.error(f"Error fetching data: {response.status}")
