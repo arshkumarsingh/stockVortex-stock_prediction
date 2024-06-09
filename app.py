@@ -32,7 +32,7 @@ def main():
             "<p style='color:LightPink ; font-size: 20px;font-family: Garamond ;font-weight: normal;'>Where stocks converge and profits swirl – welcome to StockVortex!</p>",
             unsafe_allow_html=True,
         )
-        st.image("https://www.prococommodities.com/wp-content/uploads/2021/02/blog-03_1024x768_acf_cropped.jpg")
+        st.image("https://media.tenor.com/dPYNJASNrIkAAAAi/pepe-money-rain.gif")
         
         start_date, end_date, ticker = user_inputs()
         if st.button('Fetch Data'):
