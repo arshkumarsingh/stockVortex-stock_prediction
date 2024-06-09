@@ -308,10 +308,20 @@ def portfolio_analysis():
     try:
         st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Portfolio Analysis</p>", unsafe_allow_html=True)
         tickers = st.sidebar.multiselect('Select tickers for portfolio', ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"], ["AAPL", "MSFT"], help="Select the stocks you want to include in your portfolio")
-        weights = st.sidebar.text_input('Enter weights for selected tickers', '0.5, 0.5', help="Enter weights separated by commas (e.g., 0.5, 0.5)")
-        weights = list(map(float, weights.split(',')))
+        weights_input = st.sidebar.text_input('Enter weights for selected tickers', '0.5, 0.5', help="Enter weights separated by commas (e.g., 0.5, 0.5)")
+
+        try:
+            weights = list(map(float, weights_input.split(',')))
+        except ValueError:
+            st.error("Weights must be numeric values separated by commas.")
+            return
+
         if len(weights) != len(tickers):
-            st.write("Number of weights must match number of tickers selected.")
+            st.error("Number of weights must match the number of tickers selected.")
+            return
+
+        if sum(weights) != 1.0:
+            st.error("Weights must sum up to 1.0.")
             return
 
         data = yf.download(tickers, start="2020-01-01", end="2021-01-01")['Close']
@@ -323,11 +333,12 @@ def portfolio_analysis():
         st.line_chart(cumulative_return)
 
         st.write("Risk Metrics:")
-        st.write("Sharpe Ratio:", np.mean(portfolio_return) / np.std(portfolio_return))
-        st.write("Value at Risk (5%):", np.percentile(portfolio_return, 5))
+        sharpe_ratio = np.mean(portfolio_return) / np.std(portfolio_return)
+        value_at_risk = np.percentile(portfolio_return, 5)
+        st.write(f"Sharpe Ratio: {sharpe_ratio}")
+        st.write(f"Value at Risk (5%): {value_at_risk}")
     except Exception as e:
         logger.error(f"Error in portfolio analysis: {e}")
-        st.error("An error occurred while performing portfolio analysis. Please try again later.")
 
 def risk_analysis(data, start_date, end_date):
     try:
@@ -336,7 +347,8 @@ def risk_analysis(data, start_date, end_date):
         beta, alpha = calculate_beta_alpha(returns, start_date, end_date)
         st.write(f"**Beta:** {beta}")
         st.write(f"**Alpha:** {alpha}")
-        st.write("**Sortino Ratio:**", np.mean(returns) / np.std(returns[returns < 0]))
+        sortino_ratio = np.mean(returns) / np.std(returns[returns < 0])
+        st.write(f"**Sortino Ratio:** {sortino_ratio}")
     except Exception as e:
         logger.error(f"Error in risk analysis: {e}")
         st.error("An error occurred while performing risk analysis. Please try again later.")
