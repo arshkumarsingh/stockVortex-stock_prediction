@@ -38,6 +38,8 @@ def main():
                 file_name=f'{ticker}_data.csv',
                 mime='text/csv',
             )
+            display_stock_info(ticker)
+            display_summary_statistics(data)
             plot_data(data)
             analyze_data(data)
             model_summary, predictions = forecast(data, end_date)
@@ -51,8 +53,11 @@ def main():
 
 def user_inputs():
     st.sidebar.header('Parameters')
-    start_date = st.sidebar.date_input('Start Date', date(2020, 1, 1))
-    end_date = st.sidebar.date_input('End Date', date(2020, 12, 31))
+    start_date, end_date = st.sidebar.slider(
+        'Select date range',
+        value=(date(2020, 1, 1), date(2020, 12, 31)),
+        format="YYYY-MM-DD"
+    )
     ticker_list = ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"]
     ticker = st.sidebar.selectbox('Company', ticker_list)
     return start_date, end_date, ticker
@@ -67,11 +72,32 @@ def fetch_data(ticker, start_date, end_date):
         st.error(f"Error fetching data: {e}")
         return pd.DataFrame()
 
+def display_stock_info(ticker):
+    stock = yf.Ticker(ticker)
+    info = stock.info
+    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Stock Information</p>", unsafe_allow_html=True)
+    st.write(f"**Company:** {info['shortName']}")
+    st.write(f"**Sector:** {info['sector']}")
+    st.write(f"**Industry:** {info['industry']}")
+    st.write(f"**Market Cap:** {info['marketCap']:,}")
+    st.write(f"**Previous Close:** {info['previousClose']}")
+    st.write(f"**Open:** {info['open']}")
+    st.write(f"**Day's Range:** {info['dayLow']} - {info['dayHigh']}")
+    st.write(f"**52 Week Range:** {info['fiftyTwoWeekLow']} - {info['fiftyTwoWeekHigh']}")
+
+def display_summary_statistics(data):
+    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Summary Statistics</p>", unsafe_allow_html=True)
+    st.write(data.describe())
+
 def plot_data(data):
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Data Visualization</p>", unsafe_allow_html=True)
     st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Plot of the Data</p>", unsafe_allow_html=True)
     fig = px.line(data, x='Date', y='Close', title='Closing price of the stock')
     st.plotly_chart(fig)
+    st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Candlestick Chart</p>", unsafe_allow_html=True)
+    fig_candlestick = go.Figure(data=[go.Candlestick(x=data['Date'], open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'])])
+    fig_candlestick.update_layout(title='Candlestick Chart', xaxis_title='Date', yaxis_title='Price')
+    st.plotly_chart(fig_candlestick)
 
 def analyze_data(data):
     column = st.selectbox('Select column', data.columns[1:], help="Select the column to analyze")
