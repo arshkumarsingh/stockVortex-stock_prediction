@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
                     format='%(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-@st.cache
+@st.cache(suppress_st_warning=True)
 def fetch_data(ticker, start_date, end_date):
     retry_count = 0
     max_retries = 3
@@ -32,6 +32,7 @@ def fetch_data(ticker, start_date, end_date):
             retry_count += 1
             logger.error(f"Error fetching data for ticker: {ticker} - {e}. Retry {retry_count} of {max_retries}.")
             time.sleep(2)
+    st.error(f"Failed to fetch data for ticker: {ticker} in the specified date range.")
     return pd.DataFrame()
 
 def main():
