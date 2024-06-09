@@ -72,6 +72,19 @@ apple_style = """
             max-width: 700px;
             margin: auto;
         }
+        .stButton > button {
+            background-color: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 12px;
+        }
     </style>
 """
 
@@ -92,7 +105,7 @@ def main():
         st.image("https://thechainsaw.com/wp-content/uploads/2023/05/pepe-cover.jpg", use_column_width=True)
         
         start_date, end_date, ticker = user_inputs()
-        if st.button('Fetch Data', help="Click to fetch stock data for the selected parameters", key="fetch_button", css_class="button"):
+        if st.button('Fetch Data', help="Click to fetch stock data for the selected parameters", key="fetch_button"):
             if start_date >= end_date:
                 st.error("End date must be after start date.")
             else:
@@ -130,7 +143,7 @@ def show_disclaimer():
         Trading stocks involves risk, and you should consult with a licensed financial advisor before making any investment decisions.
         StockVortex and its creators are not responsible for any financial losses you may incur.
     """)
-    if st.button("I Understand and Accept", css_class="button"):
+    if st.button("I Understand and Accept"):
         st.session_state['disclaimer_accepted'] = True
         st.experimental_rerun()
 
