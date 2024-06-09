@@ -10,7 +10,7 @@ from datetime import date
 import numpy as np
 from time import sleep
 import logging
-import requests  # Ensure requests module is imported
+import requests
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -34,7 +34,14 @@ def main():
         )
         st.image("https://media.tenor.com/dPYNJASNrIkAAAAi/pepe-money-rain.gif")
         
-        start_date, end_date, ticker = user_inputs()
+        start_date, end_date, ticker, custom_ticker = user_inputs()
+        if custom_ticker:
+            ticker = custom_ticker.upper()
+
+        if start_date >= end_date:
+            st.error("End date must be after start date.")
+            return
+        
         if st.button('Fetch Data'):
             with st.spinner('Fetching data...'):
                 data = fetch_data(ticker, start_date, end_date)
@@ -83,7 +90,8 @@ def user_inputs():
     )
     ticker_list = ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"]
     ticker = st.sidebar.selectbox('Company', ticker_list)
-    return start_date, end_date, ticker
+    custom_ticker = st.sidebar.text_input('Or enter a custom ticker (overrides selection above)', value='')
+    return start_date, end_date, ticker, custom_ticker
 
 def fetch_data(ticker, start_date, end_date):
     try:
