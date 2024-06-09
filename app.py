@@ -9,7 +9,11 @@ from statsmodels.tsa.stattools import adfuller
 from datetime import date
 import numpy as np
 from time import sleep
-import requests
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def main():
     st.markdown(
@@ -70,6 +74,7 @@ def fetch_data(ticker, start_date, end_date):
         data.reset_index(drop=True, inplace=True)
         return data
     except Exception as e:
+        logger.error(f"Error fetching data: {e}")
         st.error(f"Error fetching data: {e}")
         return pd.DataFrame()
 
@@ -77,18 +82,23 @@ def display_stock_info(ticker):
     try:
         stock = yf.Ticker(ticker)
         info = stock.info
+        if not info:
+            st.error("No stock information available.")
+            return
         st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Stock Information</p>", unsafe_allow_html=True)
-        st.write(f"**Company:** {info['shortName']}")
-        st.write(f"**Sector:** {info['sector']}")
-        st.write(f"**Industry:** {info['industry']}")
-        st.write(f"**Market Cap:** {info['marketCap']:,}")
-        st.write(f"**Previous Close:** {info['previousClose']}")
-        st.write(f"**Open:** {info['open']}")
-        st.write(f"**Day's Range:** {info['dayLow']} - {info['dayHigh']}")
-        st.write(f"**52 Week Range:** {info['fiftyTwoWeekLow']} - {info['fiftyTwoWeekHigh']}")
+        st.write(f"**Company:** {info.get('shortName', 'N/A')}")
+        st.write(f"**Sector:** {info.get('sector', 'N/A')}")
+        st.write(f"**Industry:** {info.get('industry', 'N/A')}")
+        st.write(f"**Market Cap:** {info.get('marketCap', 'N/A'):,}")
+        st.write(f"**Previous Close:** {info.get('previousClose', 'N/A')}")
+        st.write(f"**Open:** {info.get('open', 'N/A')}")
+        st.write(f"**Day's Range:** {info.get('dayLow', 'N/A')} - {info.get('dayHigh', 'N/A')}")
+        st.write(f"**52 Week Range:** {info.get('fiftyTwoWeekLow', 'N/A')} - {info.get('fiftyTwoWeekHigh', 'N/A')}")
     except requests.exceptions.HTTPError as http_err:
+        logger.error(f"HTTP error occurred: {http_err}")
         st.error(f"HTTP error occurred: {http_err}")
     except Exception as e:
+        logger.error(f"An error occurred while fetching stock information: {e}")
         st.error(f"An error occurred while fetching stock information: {e}")
 
 def display_summary_statistics(data):
