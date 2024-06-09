@@ -120,7 +120,7 @@ def render_main_page():
                     'Close': 'float64', 'Volume': 'int64'
                 })
                 
-                st.write(data)
+                st.dataframe(data)
                 st.download_button(
                     label="Download data as CSV",
                     data=data.to_csv().encode('utf-8'),
@@ -215,7 +215,7 @@ def analyze_data(data):
     column = st.selectbox('Select column', data.columns[1:], help="Select the column to analyze")
     data = data[['Date', column]]
     st.write('Selected Data')
-    st.write(data)
+    st.dataframe(data)
     st.write('Data Stationarity')
     stationarity = adfuller(data[column])[1] < 0.05
     st.write(f'Stationary: {stationarity}')
