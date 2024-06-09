@@ -8,9 +8,7 @@ import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller
 from datetime import date
 import numpy as np
-from time import sleep
 import logging
-import requests
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
@@ -18,8 +16,16 @@ logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
 logger = logging.getLogger(__name__)
 
 @st.cache
-def fetch_cached_data(ticker, start_date, end_date):
-    return fetch_data(ticker, start_date, end_date)
+def fetch_data(ticker, start_date, end_date):
+    try:
+        data = yf.download(ticker, start=start_date, end=end_date)
+        data.insert(0, "Date", data.index, True)
+        data.reset_index(drop=True, inplace=True)
+        return data
+    except Exception as e:
+        logger.error(f"Error fetching data: {e}")
+        st.error(f"Error fetching data: {e}")
+        return pd.DataFrame()
 
 def main():
     if 'disclaimer_accepted' not in st.session_state:
@@ -59,8 +65,7 @@ def render_main_page():
             st.error("End date must be after start date.")
         else:
             with st.spinner('Fetching data...'):
-                data = fetch_cached_data(ticker, start_date, end_date)
-                sleep(2)  # simulate time delay for fetching data
+                data = fetch_data(ticker, start_date, end_date)
             
             if not data.empty:
                 st.success('Data fetched successfully!')
@@ -112,17 +117,6 @@ def user_inputs():
     ticker = st.sidebar.selectbox('Company', ticker_list, help="Select the company ticker symbol")
     return start_date, end_date, ticker
 
-def fetch_data(ticker, start_date, end_date):
-    try:
-        data = yf.download(ticker, start=start_date, end=end_date)
-        data.insert(0, "Date", data.index, True)
-        data.reset_index(drop=True, inplace=True)
-        return data
-    except Exception as e:
-        logger.error(f"Error fetching data: {e}")
-        st.error(f"Error fetching data: {e}")
-        return pd.DataFrame()
-
 def display_stock_info(ticker):
     try:
         stock = yf.Ticker(ticker)
@@ -139,9 +133,6 @@ def display_stock_info(ticker):
         st.write(f"**Open:** {info.get('open', 'N/A')}")
         st.write(f"**Day's Range:** {info.get('dayLow', 'N/A')} - {info.get('dayHigh', 'N/A')}")
         st.write(f"**52 Week Range:** {info.get('fiftyTwoWeekLow', 'N/A')} - {info.get('fiftyTwoWeekHigh', 'N/A')}")
-    except requests.exceptions.HTTPError as http_err:
-        logger.error(f"HTTP error occurred: {http_err}")
-        st.error(f"HTTP error occurred: {http_err}")
     except Exception as e:
         logger.error(f"An error occurred while fetching stock information: {e}")
         st.error(f"An error occurred while fetching stock information: {e}")
