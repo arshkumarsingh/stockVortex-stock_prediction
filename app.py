@@ -1,4 +1,3 @@
-import time
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -10,6 +9,7 @@ from statsmodels.tsa.stattools import adfuller
 from datetime import date, timedelta
 import numpy as np
 import logging
+import time
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
@@ -17,21 +17,22 @@ logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
 logger = logging.getLogger(__name__)
 
 @st.cache
-@st.cache
 def fetch_data(ticker, start_date, end_date):
-    try:
-        logger.info(f"Fetching data for ticker: {ticker} from {start_date} to {end_date}")
-        data = yf.download(ticker, start=start_date, end=end_date)
-        if data.empty:
-            raise ValueError(f"No data found for ticker: {ticker} in the specified date range.")
-        data.insert(0, "Date", data.index, True)
-        data.reset_index(drop=True, inplace=True)
-        return data
-    except Exception as e:
-        logger.error(f"Error fetching data for ticker: {ticker} - {e}")
-        st.error(f"Error fetching data for ticker: {ticker} - {e}")
-        return pd.DataFrame()
-
+    retry_count = 0
+    max_retries = 3
+    while retry_count < max_retries:
+        try:
+            data = yf.download(ticker, start=start_date, end=end_date)
+            if data.empty:
+                raise ValueError(f"No data found for ticker: {ticker} in the specified date range.")
+            data.insert(0, "Date", data.index, True)
+            data.reset_index(drop=True, inplace=True)
+            return data
+        except Exception as e:
+            retry_count += 1
+            logger.error(f"Error fetching data for ticker: {ticker} - {e}. Retry {retry_count} of {max_retries}.")
+            time.sleep(2)
+    return pd.DataFrame()
 
 def main():
     if 'disclaimer_accepted' not in st.session_state:
@@ -153,6 +154,7 @@ def user_inputs():
     except Exception as e:
         logger.error(f"Error in user inputs: {e}")
         st.error("An error occurred while processing user inputs. Please try again later.")
+        return None, None, None
 
 def display_stock_info(ticker):
     try:
@@ -345,6 +347,7 @@ def portfolio_analysis():
         st.write(f"Value at Risk (5%): {value_at_risk}")
     except Exception as e:
         logger.error(f"Error in portfolio analysis: {e}")
+        st.error("An error occurred while performing portfolio analysis. Please try again later.")
 
 def risk_analysis(data, start_date, end_date):
     try:
@@ -364,8 +367,6 @@ def risk_analysis(data, start_date, end_date):
     except Exception as e:
         logger.error(f"Error in risk analysis: {e}")
         st.error(f"An error occurred while performing risk analysis: {e}")
-
-
 
 def calculate_beta_alpha(returns, start_date, end_date, max_retries=3):
     try:
