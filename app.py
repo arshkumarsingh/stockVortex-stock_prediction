@@ -41,9 +41,13 @@ def create_database():
 def save_to_database(conn, data, ticker):
     cursor = conn.cursor()
     for _, row in data.iterrows():
-        cursor.execute('''
-            INSERT INTO stock_data (ticker, date, open, high, low, close, volume) VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (ticker, row['Date'], row['Open'], row['High'], row['Low'], row['Close'], row['Volume']))
+        try:
+            cursor.execute('''
+                INSERT INTO stock_data (ticker, date, open, high, low, close, volume) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (ticker, row['Date'], row['Open'], row['High'], row['Low'], row['Close'], row['Volume']))
+        except sqlite3.ProgrammingError as e:
+            logger.error(f"Error inserting row: {row} - {e}")
+            st.error(f"Error inserting row: {row} - {e}")
     conn.commit()
 
 def load_from_database(conn, ticker, start_date, end_date):
@@ -185,7 +189,7 @@ def display_summary_statistics(data):
     st.write(data.describe())
 
 def plot_data(data):
-    col1, col2 = st.beta_columns(2)
+    col1, col2 = st.columns(2)
     
     with col1:
         st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Plot of the Data</p>", unsafe_allow_html=True)
