@@ -44,7 +44,7 @@ def save_to_database(conn, data, ticker):
         try:
             cursor.execute('''
                 INSERT INTO stock_data (ticker, date, open, high, low, close, volume) VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (ticker, row['Date'], row['Open'], row['High'], row['Low'], row['Close'], row['Volume']))
+            ''', (ticker, row['Date'].strftime('%Y-%m-%d'), row['Open'], row['High'], row['Low'], row['Close'], row['Volume']))
         except sqlite3.ProgrammingError as e:
             logger.error(f"Error inserting row: {row} - {e}")
             st.error(f"Error inserting row: {row} - {e}")
