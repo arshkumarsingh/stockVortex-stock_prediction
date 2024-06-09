@@ -97,20 +97,33 @@ def user_inputs():
     }
     
     # Dropdown for date range selection
-    date_range_option = st.sidebar.selectbox("Select date range", options=list(date_ranges.keys()))
+    date_range_option = st.sidebar.selectbox(
+        "Select date range",
+        options=list(date_ranges.keys()),
+        help="Select the time period for which you want to analyze the stock data."
+    )
     
     if date_range_option == "Custom":
         start_date, end_date = st.sidebar.slider(
             'Select date range',
             value=(date(2020, 1, 1), date(2020, 12, 31)),
-            format="YYYY-MM-DD"
+            format="YYYY-MM-DD",
+            help="Select a custom date range for the stock data."
         )
     else:
         start_date, end_date = date_ranges[date_range_option]
     
     ticker_list = ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"]
-    ticker = st.sidebar.selectbox('Company', ticker_list)
-    custom_ticker = st.sidebar.text_input('Or enter a custom ticker (overrides selection above)', value='')
+    ticker = st.sidebar.selectbox(
+        'Company',
+        ticker_list,
+        help="Select a company from the list to fetch its stock data."
+    )
+    custom_ticker = st.sidebar.text_input(
+        'Or enter a custom ticker (overrides selection above)',
+        value='',
+        help="Enter a custom stock ticker symbol to fetch data for a specific company."
+    )
     return start_date, end_date, ticker, custom_ticker
 
 def fetch_data(ticker, start_date, end_date):
@@ -155,7 +168,7 @@ def plot_data(data):
     try:
         st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Data Visualization</p>", unsafe_allow_html=True)
         st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Plot of the Data</p>", unsafe_allow_html=True)
-        fig = px.line(data, x='Date', y='Close', title='Closing price of the stock')
+        fig = px.line(data, x='Date', y='Close', title='Closing price of the stock', labels={'Date': 'Date', 'Close': 'Closing Price'})
         st.plotly_chart(fig)
         st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Candlestick Chart</p>", unsafe_allow_html=True)
         fig_candlestick = go.Figure(data=[go.Candlestick(x=data['Date'], open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'])])
@@ -167,7 +180,11 @@ def plot_data(data):
 
 def analyze_data(data):
     try:
-        column = st.selectbox('Select column', data.columns[1:], help="Select the column to analyze")
+        column = st.selectbox(
+            'Select column',
+            data.columns[1:],
+            help="Select the column you want to analyze for stationarity and decomposition."
+        )
         data = data[['Date', column]]
         st.write('Selected Data')
         st.write(data)
@@ -194,17 +211,17 @@ def plot_decomposition(data, decomposition):
 
 def forecast(data, end_date):
     try:
-        p = st.slider('Select value of p', 0, 5, 2, help="AR order")
-        d = st.slider('Select value of d', 0, 5, 1, help="Differencing order")
-        q = st.slider('Select value of q', 0, 5, 2, help="MA order")
-        seasonal_order = st.number_input('Select value of seasonal p', 0, 24, 12, help="Seasonal AR order")
+        p = st.slider('Select value of p', 0, 5, 2, help="AR order: The number of lag observations included in the model.")
+        d = st.slider('Select value of d', 0, 5, 1, help="Differencing order: The number of times the raw observations are differenced.")
+        q = st.slider('Select value of q', 0, 5, 2, help="MA order: The size of the moving average window.")
+        seasonal_order = st.number_input('Select value of seasonal p', 0, 24, 12, help="Seasonal AR order: The number of lag observations included in the seasonal part of the model.")
         model = sm.tsa.statespace.SARIMAX(data.iloc[:, 1], order=(p, d, q), seasonal_order=(p, d, q, seasonal_order))
         model = model.fit()
         st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Model Summary</p>", unsafe_allow_html=True)
         st.write(model.summary())
         st.write('---')
         st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Forecasting the Data</p>", unsafe_allow_html=True)
-        forecast_period = st.number_input('Select number of days for prediction', 1, 365, 10)
+        forecast_period = st.number_input('Select number of days for prediction', 1, 365, 10, help="Number of days into the future you want to forecast.")
         predictions = model.get_prediction(start=len(data), end=len(data) + forecast_period - 1)
         predictions = predictions.predicted_mean
         predictions.index = pd.date_range(start=end_date, periods=len(predictions), freq='D')
@@ -238,19 +255,24 @@ def add_technical_indicators(data):
     try:
         st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Technical Indicators</p>", unsafe_allow_html=True)
         # Simple Moving Average
+        st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Simple Moving Average (SMA)</p>", unsafe_allow_html=True)
         data['SMA'] = data['Close'].rolling(window=20).mean()
         # Exponential Moving Average
+        st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Exponential Moving Average (EMA)</p>", unsafe_allow_html=True)
         data['EMA'] = data['Close'].ewm(span=20, adjust=False).mean()
         # Bollinger Bands
+        st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Bollinger Bands</p>", unsafe_allow_html=True)
         data['Bollinger_Upper'] = data['SMA'] + 2*data['Close'].rolling(window=20).std()
         data['Bollinger_Lower'] = data['SMA'] - 2*data['Close'].rolling(window=20).std()
         # RSI
+        st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Relative Strength Index (RSI)</p>", unsafe_allow_html=True)
         delta = data['Close'].diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
         RS = gain / loss
         data['RSI'] = 100 - (100 / (1 + RS))
         # MACD
+        st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Moving Average Convergence Divergence (MACD)</p>", unsafe_allow_html=True)
         data['MACD'] = data['Close'].ewm(span=12, adjust=False).mean() - data['Close'].ewm(span=26, adjust=False).mean()
         data['Signal_Line'] = data['MACD'].ewm(span=9, adjust=False).mean()
 
@@ -278,8 +300,17 @@ def add_technical_indicators(data):
 def portfolio_analysis():
     try:
         st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Portfolio Analysis</p>", unsafe_allow_html=True)
-        tickers = st.sidebar.multiselect('Select tickers for portfolio', ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"], ["AAPL", "MSFT"])
-        weights = st.sidebar.text_input('Enter weights for selected tickers', '0.5, 0.5', help="Enter weights separated by commas")
+        tickers = st.sidebar.multiselect(
+            'Select tickers for portfolio',
+            ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"],
+            ["AAPL", "MSFT"],
+            help="Select the stocks to include in your portfolio."
+        )
+        weights = st.sidebar.text_input(
+            'Enter weights for selected tickers',
+            '0.5, 0.5',
+            help="Enter the weights for each stock in your portfolio, separated by commas. Ensure the total weights sum up to 1."
+        )
         weights = list(map(float, weights.split(',')))
         if len(weights) != len(tickers):
             st.write("Number of weights must match number of tickers selected.")
