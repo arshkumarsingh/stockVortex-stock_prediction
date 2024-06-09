@@ -16,6 +16,10 @@ import requests  # Ensure requests module is imported
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+@st.cache_data
+def fetch_cached_data(ticker, start_date, end_date):
+    return fetch_data(ticker, start_date, end_date)
+
 def main():
     if 'disclaimer_accepted' not in st.session_state:
         st.session_state['disclaimer_accepted'] = False
@@ -36,31 +40,34 @@ def main():
         
         start_date, end_date, ticker = user_inputs()
         if st.button('Fetch Data'):
-            with st.spinner('Fetching data...'):
-                data = fetch_data(ticker, start_date, end_date)
-                sleep(2)  # simulate time delay for fetching data
-        
-            if not data.empty:
-                st.success('Data fetched successfully!')
-                st.write(f'Data from {start_date} to {end_date}')
-                st.write(data)
-                st.download_button(
-                    label="Download data as CSV",
-                    data=data.to_csv().encode('utf-8'),
-                    file_name=f'{ticker}_data.csv',
-                    mime='text/csv',
-                )
-                display_stock_info(ticker)
-                display_summary_statistics(data)
-                plot_data(data)
-                analyze_data(data)
-                model_summary, predictions = forecast(data, end_date)
-                st.write(model_summary)
-                plot_predictions(data, predictions)
-                add_technical_indicators(data)
-                portfolio_analysis()
+            if start_date >= end_date:
+                st.error("End date must be after start date.")
             else:
-                st.error("No data found for the selected parameters.")
+                with st.spinner('Fetching data...'):
+                    data = fetch_cached_data(ticker, start_date, end_date)
+                    sleep(2)  # simulate time delay for fetching data
+            
+                if not data.empty:
+                    st.success('Data fetched successfully!')
+                    st.write(f'Data from {start_date} to {end_date}')
+                    st.write(data)
+                    st.download_button(
+                        label="Download data as CSV",
+                        data=data.to_csv().encode('utf-8'),
+                        file_name=f'{ticker}_data.csv',
+                        mime='text/csv',
+                    )
+                    display_stock_info(ticker)
+                    display_summary_statistics(data)
+                    plot_data(data)
+                    analyze_data(data)
+                    model_summary, predictions = forecast(data, end_date)
+                    st.write(model_summary)
+                    plot_predictions(data, predictions)
+                    add_technical_indicators(data)
+                    portfolio_analysis()
+                else:
+                    st.error("No data found for the selected parameters.")
         about_author()
 
 def show_disclaimer():
