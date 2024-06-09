@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from statsmodels.tsa.seasonal import seasonal_decompose
 import statsmodels.api as sm
 from statsmodels.tsa.stattools import adfuller
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 import numpy as np
 import logging
 
@@ -80,11 +80,29 @@ def show_disclaimer():
 
 def user_inputs():
     st.sidebar.header('Parameters')
-    start_date, end_date = st.sidebar.slider(
-        'Select date range',
-        value=(date(2020, 1, 1), date(2020, 12, 31)),
-        format="YYYY-MM-DD"
-    )
+    # Default date ranges
+    today = date.today()
+    one_year_ago = today - timedelta(days=365)
+    two_years_ago = today - timedelta(days=730)
+    
+    date_ranges = {
+        "Past Year": (one_year_ago, today),
+        "Past Two Years": (two_years_ago, today),
+        "Custom": None
+    }
+    
+    # Dropdown for date range selection
+    date_range_option = st.sidebar.selectbox("Select date range", options=list(date_ranges.keys()))
+    
+    if date_range_option == "Custom":
+        start_date, end_date = st.sidebar.slider(
+            'Select date range',
+            value=(date(2020, 1, 1), date(2020, 12, 31)),
+            format="YYYY-MM-DD"
+        )
+    else:
+        start_date, end_date = date_ranges[date_range_option]
+    
     ticker_list = ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"]
     ticker = st.sidebar.selectbox('Company', ticker_list)
     custom_ticker = st.sidebar.text_input('Or enter a custom ticker (overrides selection above)', value='')
