@@ -112,6 +112,10 @@ def render_main_page():
             if not data.empty:
                 st.success('Data fetched successfully!')
                 st.write(f'Data from {start_date} to {end_date}')
+                
+                # Ensure Date is in string format
+                data['Date'] = data['Date'].astype(str)
+                
                 st.write(data)
                 st.download_button(
                     label="Download data as CSV",
