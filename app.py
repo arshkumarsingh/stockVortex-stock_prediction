@@ -10,15 +10,58 @@ from datetime import date
 import numpy as np
 from time import sleep
 import logging
-import requests
+import sqlite3
+import auth0_component
+
+# Initialize Auth0 component
+auth0_component.init()
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
+                    format='%(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 @st.cache_data
 def fetch_cached_data(ticker, start_date, end_date):
     return fetch_data(ticker, start_date, end_date)
+
+def create_database():
+    conn = sqlite3.connect('stocks.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS stock_data (
+            ticker TEXT,
+            date TEXT,
+            open REAL,
+            high REAL,
+            low REAL,
+            close REAL,
+            volume INTEGER
+        )
+    ''')
+    conn.commit()
+    return conn
+
+def save_to_database(conn, data, ticker):
+    cursor = conn.cursor()
+    for _, row in data.iterrows():
+        cursor.execute('''
+            INSERT INTO stock_data (ticker, date, open, high, low, close, volume) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (ticker, row['Date'], row['Open'], row['High'], row['Low'], row['Close'], row['Volume']))
+    conn.commit()
+
+def load_from_database(conn, ticker, start_date, end_date):
+    cursor = conn.cursor()
+    query = '''
+        SELECT * FROM stock_data WHERE ticker = ? AND date BETWEEN ? AND ?
+    '''
+    cursor.execute(query, (ticker, start_date, end_date))
+    rows = cursor.fetchall()
+    if rows:
+        columns = ['ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume']
+        data = pd.DataFrame(rows, columns=columns)
+        return data
+    return pd.DataFrame()
 
 def main():
     if 'disclaimer_accepted' not in st.session_state:
@@ -27,54 +70,14 @@ def main():
     if not st.session_state['disclaimer_accepted']:
         show_disclaimer()
     else:
-        st.markdown(
-            """ <style> .font { font-size:50px ; font-weight: bold; font-family: 'Courier New'; color: #DB7093;} </style> """,
-            unsafe_allow_html=True,
-        )
-        st.markdown('<p class="font">StockVortex</p>', unsafe_allow_html=True)
-        st.write(
-            "<p style='color:LightPink ; font-size: 20px;font-family: Garamond ;font-weight: normal;'>Where stocks converge and profits swirl – welcome to StockVortex!</p>",
-            unsafe_allow_html=True,
-        )
-        st.image("https://thechainsaw.com/wp-content/uploads/2023/05/pepe-cover.jpg")
-        
-        start_date, end_date, ticker = user_inputs()
-        if st.button('Fetch Data', help="Click to fetch stock data for the selected parameters"):
-            if start_date >= end_date:
-                st.error("End date must be after start date.")
-            else:
-                with st.spinner('Fetching data...'):
-                    data = fetch_cached_data(ticker, start_date, end_date)
-                    sleep(2)  # simulate time delay for fetching data
-            
-                if not data.empty:
-                    st.success('Data fetched successfully!')
-                    st.write(f'Data from {start_date} to {end_date}')
-                    st.write(data)
-                    st.download_button(
-                        label="Download data as CSV",
-                        data=data.to_csv().encode('utf-8'),
-                        file_name=f'{ticker}_data.csv',
-                        mime='text/csv',
-                    )
-                    display_stock_info(ticker)
-                    display_summary_statistics(data)
-                    plot_data(data)
-                    analyze_data(data)
-                    model_summary, predictions = forecast(data, end_date)
-                    st.write(model_summary)
-                    plot_predictions(data, predictions)
-                    add_technical_indicators(data)
-                    portfolio_analysis()
-                    risk_analysis(data, start_date, end_date)
-                    dividend_analysis(ticker)
-                    economic_indicators()
-                    news_sentiment_analysis(ticker)
-                    event_study_analysis(ticker)
-                    custom_alerts(ticker)
-                else:
-                    st.error("No data found for the selected parameters.")
-        about_author()
+        user_info = auth0_component.get_user_info()
+        if user_info:
+            st.sidebar.write(f"Hello, {user_info['name']}")
+            st.sidebar.button("Log out", on_click=auth0_component.logout)
+            render_main_page(user_info)
+        else:
+            st.write("Please log in to access the application.")
+            auth0_component.login_button()
 
 def show_disclaimer():
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Disclaimer</p>", unsafe_allow_html=True)
@@ -86,6 +89,61 @@ def show_disclaimer():
     if st.button("I Understand and Accept"):
         st.session_state['disclaimer_accepted'] = True
         st.experimental_rerun()
+
+def render_main_page(user_info):
+    st.markdown(
+        """ <style> .font { font-size:50px ; font-weight: bold; font-family: 'Courier New'; color: #DB7093;} </style> """,
+        unsafe_allow_html=True,
+    )
+    st.markdown('<p class="font">StockVortex</p>', unsafe_allow_html=True)
+    st.write(
+        "<p style='color:LightPink ; font-size: 20px;font-family: Garamond ;font-weight: normal;'>Where stocks converge and profits swirl – welcome to StockVortex!</p>",
+        unsafe_allow_html=True,
+    )
+    st.image("https://thechainsaw.com/wp-content/uploads/2023/05/pepe-cover.jpg")
+    
+    start_date, end_date, ticker = user_inputs()
+    if st.button('Fetch Data', help="Click to fetch stock data for the selected parameters"):
+        if start_date >= end_date:
+            st.error("End date must be after start date.")
+        else:
+            with st.spinner('Fetching data...'):
+                conn = create_database()
+                data = load_from_database(conn, ticker, start_date, end_date)
+                if data.empty:
+                    data = fetch_cached_data(ticker, start_date, end_date)
+                    save_to_database(conn, data, ticker)
+                sleep(2)  # simulate time delay for fetching data
+            
+            if not data.empty:
+                st.success('Data fetched successfully!')
+                st.write(f'Data from {start_date} to {end_date}')
+                st.write(data)
+                st.download_button(
+                    label="Download data as CSV",
+                    data=data.to_csv().encode('utf-8'),
+                    file_name=f'{ticker}_data.csv',
+                    mime='text/csv',
+                )
+                display_stock_info(ticker)
+                display_summary_statistics(data)
+                plot_data(data)
+                analyze_data(data)
+                model_summary, predictions = forecast(data, end_date)
+                st.write(model_summary)
+                plot_predictions(data, predictions)
+                add_technical_indicators(data)
+                portfolio_analysis()
+                risk_analysis(data, start_date, end_date)
+                dividend_analysis(ticker)
+                economic_indicators()
+                news_sentiment_analysis(ticker)
+                event_study_analysis(ticker)
+                custom_alerts(ticker)
+            else:
+                st.error("No data found for the selected parameters.")
+    debug_mode()
+    about_author()
 
 def user_inputs():
     st.sidebar.header('Parameters')
@@ -138,14 +196,18 @@ def display_summary_statistics(data):
     st.write(data.describe())
 
 def plot_data(data):
-    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Data Visualization</p>", unsafe_allow_html=True)
-    st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Plot of the Data</p>", unsafe_allow_html=True)
-    fig = px.line(data, x='Date', y='Close', title='Closing price of the stock', labels={'Close': 'Close Price'})
-    st.plotly_chart(fig, use_container_width=True)
-    st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Candlestick Chart</p>", unsafe_allow_html=True)
-    fig_candlestick = go.Figure(data=[go.Candlestick(x=data['Date'], open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'])])
-    fig_candlestick.update_layout(title='Candlestick Chart', xaxis_title='Date', yaxis_title='Price')
-    st.plotly_chart(fig_candlestick, use_container_width=True)
+    col1, col2 = st.beta_columns(2)
+    
+    with col1:
+        st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Plot of the Data</p>", unsafe_allow_html=True)
+        fig = px.line(data, x='Date', y='Close', title='Closing price of the stock', labels={'Close': 'Close Price'})
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Candlestick Chart</p>", unsafe_allow_html=True)
+        fig_candlestick = go.Figure(data=[go.Candlestick(x=data['Date'], open=data['Open'], high=data['High'], low=data['Low'], close=data['Close'])])
+        fig_candlestick.update_layout(title='Candlestick Chart', xaxis_title='Date', yaxis_title='Price')
+        st.plotly_chart(fig_candlestick, use_container_width=True)
 
 def analyze_data(data):
     column = st.selectbox('Select column', data.columns[1:], help="Select the column to analyze")
@@ -311,6 +373,12 @@ def custom_alerts(ticker):
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Custom Alerts</p>", unsafe_allow_html=True)
     alert_price = st.number_input('Set price alert', min_value=0.0, help="Set the price at which you want to receive an alert for the stock")
     st.write(f"Alert set for {ticker} at {alert_price}")
+
+def debug_mode():
+    debug = st.checkbox('Enable Debug Mode')
+    if debug:
+        with open('app.log') as f:
+            st.download_button('Download Logs', data=f.read(), file_name='app.log')
 
 def about_author():
     st.write("---")
