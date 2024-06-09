@@ -10,6 +10,10 @@ from datetime import date, timedelta
 import numpy as np
 import logging
 import time
+from signal import signal, SIGPIPE, SIG_DFL
+
+signal(SIGPIPE,SIG_DFL)
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
