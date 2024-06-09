@@ -10,6 +10,7 @@ from datetime import date
 import numpy as np
 from time import sleep
 import logging
+import requests  # Ensure requests module is imported
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
