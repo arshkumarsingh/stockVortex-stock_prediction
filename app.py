@@ -10,8 +10,7 @@ from datetime import date
 import numpy as np
 from time import sleep
 import logging
-import requests  # Ensure requests module is imported
-from sklearn.covariance import LedoitWolf
+import requests
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -325,6 +324,5 @@ def about_author():
         unsafe_allow_html=True,
     )
 
-#
 if __name__ == "__main__":
     main()
