@@ -10,7 +10,7 @@ from datetime import date, timedelta
 import numpy as np
 import logging
 import time
-
+from alpha_vantage.timeseries import TimeSeries
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
@@ -36,9 +36,24 @@ def fetch_data(ticker, start_date, end_date):
             logger.error(f"Error fetching data for ticker: {ticker} - {e}. Retry {retry_count} of {max_retries}.")
             st.write(f"Error fetching data for ticker: {ticker} - {e}. Retry {retry_count} of {max_retries}.")
             time.sleep(5)  # Wait for 5 seconds before retrying
-    st.error(f"Failed to fetch data for ticker: {ticker} in the specified date range.")
-    logger.error(f"Failed to fetch data for ticker: {ticker} in the specified date range after {max_retries} retries.")
-    return pd.DataFrame()
+
+    # Fallback to Alpha Vantage
+    try:
+        st.write(f"Fetching data from Alpha Vantage for ticker: {ticker}")
+        logger.info(f"Fetching data from Alpha Vantage for ticker: {ticker}")
+        api_key = " JVU7A6C248C4J68W"  # Replace with your Alpha Vantage API key
+        ts = TimeSeries(key=api_key, output_format='pandas')
+        data, meta_data = ts.get_daily_adjusted(symbol=ticker, outputsize='full')
+        data = data[(data.index >= start_date) & (data.index <= end_date)]
+        if data.empty:
+            raise ValueError(f"No data found for ticker: {ticker} in the specified date range using Alpha Vantage.")
+        data.insert(0, "Date", data.index, True)
+        data.reset_index(drop=True, inplace=True)
+        return data
+    except Exception as e:
+        st.error(f"Failed to fetch data for ticker: {ticker} from Alpha Vantage.")
+        logger.error(f"Failed to fetch data for ticker: {ticker} from Alpha Vantage - {e}")
+        return pd.DataFrame()
 
 def main():
     if 'disclaimer_accepted' not in st.session_state:
@@ -119,9 +134,7 @@ def render_main_page():
                     risk_analysis(data, start_date, end_date)
                     dividend_analysis(ticker)
                     economic_indicators()
-                    news_sentiment_analysis(ticker)
                     event_study_analysis(ticker)
-                    custom_alerts(ticker)
                 else:
                     st.error("No data found for the selected parameters.")
     except Exception as e:
@@ -423,16 +436,7 @@ def economic_indicators():
         logger.error(f"Error displaying economic indicators: {e}")
         st.error("An error occurred while displaying economic indicators. Please try again later.")
 
-def news_sentiment_analysis(ticker):
-    try:
-        st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>News Sentiment Analysis</p>", unsafe_allow_html=True)
-        # Placeholder for actual news sentiment analysis
-        st.write("Sentiment Analysis of Recent News:")
-        st.write(f"Positive sentiment for {ticker}: 60%")
-        st.write(f"Negative sentiment for {ticker}: 40%")
-    except Exception as e:
-        logger.error(f"Error in news sentiment analysis: {e}")
-        st.error("An error occurred while performing news sentiment analysis. Please try again later.")
+
 
 def event_study_analysis(ticker):
     try:
@@ -443,24 +447,8 @@ def event_study_analysis(ticker):
         logger.error(f"Error in event study analysis: {e}")
         st.error("An error occurred while performing event study analysis. Please try again later.")
 
-def custom_alerts(ticker):
-    try:
-        st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Custom Alerts</p>", unsafe_allow_html=True)
-        alert_price = st.number_input('Set price alert', min_value=0.0, help="Set the price at which you want to receive an alert for the stock")
-        st.write(f"Alert set for {ticker} at {alert_price}")
-    except Exception as e:
-        logger.error(f"Error in custom alerts: {e}")
-        st.error("An error occurred while setting custom alerts. Please try again later.")
 
-def debug_mode():
-    try:
-        debug = st.checkbox('Enable Debug Mode')
-        if debug:
-            with open('app.log') as f:
-                st.download_button('Download Logs', data=f.read(), file_name='app.log')
-    except Exception as e:
-        logger.error(f"Error in debug mode: {e}")
-        st.error("An error occurred while enabling debug mode. Please try again later.")
+
 
 def about_author():
     try:
