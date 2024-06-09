@@ -1,3 +1,4 @@
+import time
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -16,16 +17,21 @@ logging.basicConfig(level=logging.INFO, filename='app.log', filemode='a',
 logger = logging.getLogger(__name__)
 
 @st.cache
+@st.cache
 def fetch_data(ticker, start_date, end_date):
     try:
+        logger.info(f"Fetching data for ticker: {ticker} from {start_date} to {end_date}")
         data = yf.download(ticker, start=start_date, end=end_date)
+        if data.empty:
+            raise ValueError(f"No data found for ticker: {ticker} in the specified date range.")
         data.insert(0, "Date", data.index, True)
         data.reset_index(drop=True, inplace=True)
         return data
     except Exception as e:
-        logger.error(f"Error fetching data: {e}")
-        st.error(f"Error fetching data: {e}")
+        logger.error(f"Error fetching data for ticker: {ticker} - {e}")
+        st.error(f"Error fetching data for ticker: {ticker} - {e}")
         return pd.DataFrame()
+
 
 def main():
     if 'disclaimer_accepted' not in st.session_state:
@@ -360,27 +366,35 @@ def risk_analysis(data, start_date, end_date):
         st.error(f"An error occurred while performing risk analysis: {e}")
 
 
-def calculate_beta_alpha(returns, start_date, end_date):
+
+def calculate_beta_alpha(returns, start_date, end_date, max_retries=3):
     try:
-        market_data = yf.download('SPY', start=start_date, end=end_date)['Close'].pct_change().dropna()
-        if market_data.empty:
-            raise ValueError("No market data available for the specified date range.")
-        
-        combined_data = pd.concat([returns, market_data], axis=1).dropna()
-        if combined_data.empty:
-            raise ValueError("No combined data available for the stock and market.")
-        
-        combined_data.columns = ['Stock', 'Market']
-        covariance = np.cov(combined_data['Stock'], combined_data['Market'])[0][1]
-        beta = covariance / np.var(combined_data['Market'])
-        alpha = np.mean(combined_data['Stock']) - beta * np.mean(combined_data['Market'])
-        
-        return beta, alpha
+        retry_count = 0
+        while retry_count < max_retries:
+            try:
+                market_data = yf.download('SPY', start=start_date, end=end_date)['Close'].pct_change().dropna()
+                if market_data.empty:
+                    raise ValueError("No market data available for the specified date range.")
+                
+                combined_data = pd.concat([returns, market_data], axis=1).dropna()
+                if combined_data.empty:
+                    raise ValueError("No combined data available for the stock and market.")
+                
+                combined_data.columns = ['Stock', 'Market']
+                covariance = np.cov(combined_data['Stock'], combined_data['Market'])[0][1]
+                beta = covariance / np.var(combined_data['Market'])
+                alpha = np.mean(combined_data['Stock']) - beta * np.mean(combined_data['Market'])
+                
+                return beta, alpha
+            except Exception as e:
+                retry_count += 1
+                logger.error(f"Error calculating beta and alpha: {e}. Retry {retry_count} of {max_retries}.")
+                time.sleep(2)  # Wait for 2 seconds before retrying
+        raise Exception("Max retries reached. Failed to calculate beta and alpha.")
     except Exception as e:
         logger.error(f"Error calculating beta and alpha: {e}")
         st.error(f"An error occurred while calculating beta and alpha: {e}")
         return None, None
-
 
 def dividend_analysis(ticker):
     try:
