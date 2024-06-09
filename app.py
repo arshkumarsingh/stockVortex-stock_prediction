@@ -16,45 +16,62 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def main():
-    st.markdown(
-        """ <style> .font { font-size:50px ; font-weight: bold; font-family: 'Courier New'; color: #DB7093;} </style> """,
-        unsafe_allow_html=True,
-    )
-    st.markdown('<p class="font">StockVortex</p>', unsafe_allow_html=True)
-    st.write(
-        "<p style='color:LightPink ; font-size: 20px;font-family: Garamond ;font-weight: normal;'>Where stocks converge and profits swirl – welcome to StockVortex!</p>",
-        unsafe_allow_html=True,
-    )
-    st.image("https://www.prococommodities.com/wp-content/uploads/2021/02/blog-03_1024x768_acf_cropped.jpg")
-    
-    start_date, end_date, ticker = user_inputs()
-    if st.button('Fetch Data'):
-        with st.spinner('Fetching data...'):
-            data = fetch_data(ticker, start_date, end_date)
-            sleep(2)  # simulate time delay for fetching data
-    
-        if not data.empty:
-            st.success('Data fetched successfully!')
-            st.write(f'Data from {start_date} to {end_date}')
-            st.write(data)
-            st.download_button(
-                label="Download data as CSV",
-                data=data.to_csv().encode('utf-8'),
-                file_name=f'{ticker}_data.csv',
-                mime='text/csv',
-            )
-            display_stock_info(ticker)
-            display_summary_statistics(data)
-            plot_data(data)
-            analyze_data(data)
-            model_summary, predictions = forecast(data, end_date)
-            st.write(model_summary)
-            plot_predictions(data, predictions)
-            add_technical_indicators(data)
-            portfolio_analysis()
-        else:
-            st.error("No data found for the selected parameters.")
-    about_author()
+    if 'disclaimer_accepted' not in st.session_state:
+        st.session_state['disclaimer_accepted'] = False
+
+    if not st.session_state['disclaimer_accepted']:
+        show_disclaimer()
+    else:
+        st.markdown(
+            """ <style> .font { font-size:50px ; font-weight: bold; font-family: 'Courier New'; color: #DB7093;} </style> """,
+            unsafe_allow_html=True,
+        )
+        st.markdown('<p class="font">StockVortex</p>', unsafe_allow_html=True)
+        st.write(
+            "<p style='color:LightPink ; font-size: 20px;font-family: Garamond ;font-weight: normal;'>Where stocks converge and profits swirl – welcome to StockVortex!</p>",
+            unsafe_allow_html=True,
+        )
+        st.image("https://www.prococommodities.com/wp-content/uploads/2021/02/blog-03_1024x768_acf_cropped.jpg")
+        
+        start_date, end_date, ticker = user_inputs()
+        if st.button('Fetch Data'):
+            with st.spinner('Fetching data...'):
+                data = fetch_data(ticker, start_date, end_date)
+                sleep(2)  # simulate time delay for fetching data
+        
+            if not data.empty:
+                st.success('Data fetched successfully!')
+                st.write(f'Data from {start_date} to {end_date}')
+                st.write(data)
+                st.download_button(
+                    label="Download data as CSV",
+                    data=data.to_csv().encode('utf-8'),
+                    file_name=f'{ticker}_data.csv',
+                    mime='text/csv',
+                )
+                display_stock_info(ticker)
+                display_summary_statistics(data)
+                plot_data(data)
+                analyze_data(data)
+                model_summary, predictions = forecast(data, end_date)
+                st.write(model_summary)
+                plot_predictions(data, predictions)
+                add_technical_indicators(data)
+                portfolio_analysis()
+            else:
+                st.error("No data found for the selected parameters.")
+        about_author()
+
+def show_disclaimer():
+    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Disclaimer</p>", unsafe_allow_html=True)
+    st.write("""
+        The information provided by StockVortex is for educational purposes only and should not be considered as financial advice.
+        Trading stocks involves risk, and you should consult with a licensed financial advisor before making any investment decisions.
+        StockVortex and its creators are not responsible for any financial losses you may incur.
+    """)
+    if st.button("I Understand and Accept"):
+        st.session_state['disclaimer_accepted'] = True
+        st.experimental_rerun()
 
 def user_inputs():
     st.sidebar.header('Parameters')
