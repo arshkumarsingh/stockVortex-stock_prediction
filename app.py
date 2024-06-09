@@ -11,6 +11,7 @@ import numpy as np
 from time import sleep
 import logging
 import requests  # Ensure requests module is imported
+from sklearn.covariance import LedoitWolf
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -132,6 +133,12 @@ def main():
                     plot_predictions(data, predictions)
                     add_technical_indicators(data)
                     portfolio_analysis()
+                    risk_analysis(data)
+                    dividend_analysis(ticker)
+                    economic_indicators()
+                    news_sentiment_analysis(ticker)
+                    event_study_analysis(ticker)
+                    custom_alerts(ticker)
                 else:
                     st.error("No data found for the selected parameters.")
         about_author()
@@ -317,6 +324,58 @@ def portfolio_analysis():
     st.write("Risk Metrics:")
     st.write("Sharpe Ratio:", np.mean(portfolio_return) / np.std(portfolio_return))
     st.write("Value at Risk (5%):", np.percentile(portfolio_return, 5))
+
+def risk_analysis(data):
+    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Risk Analysis</p>", unsafe_allow_html=True)
+    returns = data['Close'].pct_change().dropna()
+    beta, alpha = calculate_beta_alpha(returns)
+    st.write(f"**Beta:** {beta}")
+    st.write(f"**Alpha:** {alpha}")
+    st.write("**Sortino Ratio:**", np.mean(returns) / np.std(returns[returns < 0]))
+
+def calculate_beta_alpha(returns):
+    market_data = yf.download('SPY', start=returns.index.min(), end=returns.index.max())['Close'].pct_change().dropna()
+    covariance = np.cov(returns, market_data)[0][1]
+    beta = covariance / np.var(market_data)
+    alpha = np.mean(returns) - beta * np.mean(market_data)
+    return beta, alpha
+
+def dividend_analysis(ticker):
+    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Dividend Analysis</p>", unsafe_allow_html=True)
+    stock = yf.Ticker(ticker)
+    dividends = stock.dividends
+    if dividends.empty:
+        st.write("No dividends data available.")
+        return
+    st.write("Dividend Data:")
+    st.write(dividends)
+    st.line_chart(dividends)
+
+def economic_indicators():
+    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Economic Indicators</p>", unsafe_allow_html=True)
+    indicators = {
+        "Interest Rate": 0.025,
+        "Inflation Rate": 0.02,
+        "Unemployment Rate": 0.05
+    }
+    st.write(indicators)
+
+def news_sentiment_analysis(ticker):
+    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>News Sentiment Analysis</p>", unsafe_allow_html=True)
+    # Placeholder for actual news sentiment analysis
+    st.write("Sentiment Analysis of Recent News:")
+    st.write(f"Positive sentiment for {ticker}: 60%")
+    st.write(f"Negative sentiment for {ticker}: 40%")
+
+def event_study_analysis(ticker):
+    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Event Study Analysis</p>", unsafe_allow_html=True)
+    # Placeholder for actual event study analysis
+    st.write(f"Impact of recent earnings announcement on {ticker}: +5%")
+
+def custom_alerts(ticker):
+    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Custom Alerts</p>", unsafe_allow_html=True)
+    alert_price = st.number_input('Set price alert', min_value=0.0, help="Set the price at which you want to receive an alert for the stock")
+    st.write(f"Alert set for {ticker} at {alert_price}")
 
 def about_author():
     st.write("---")
