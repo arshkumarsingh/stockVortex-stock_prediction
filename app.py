@@ -113,8 +113,12 @@ def render_main_page():
                 st.success('Data fetched successfully!')
                 st.write(f'Data from {start_date} to {end_date}')
                 
-                # Ensure Date is in string format
+                # Ensure Date is in string format and other columns are of supported data types
                 data['Date'] = data['Date'].astype(str)
+                data = data.astype({
+                    'Open': 'float64', 'High': 'float64', 'Low': 'float64',
+                    'Close': 'float64', 'Volume': 'int64'
+                })
                 
                 st.write(data)
                 st.download_button(
