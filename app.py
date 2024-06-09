@@ -344,28 +344,43 @@ def risk_analysis(data, start_date, end_date):
     try:
         st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Risk Analysis</p>", unsafe_allow_html=True)
         returns = data['Close'].pct_change().dropna()
+        if returns.empty:
+            raise ValueError("No returns data available for the specified stock.")
+        
         beta, alpha = calculate_beta_alpha(returns, start_date, end_date)
+        if beta is None or alpha is None:
+            raise ValueError("Failed to calculate beta or alpha.")
+        
         st.write(f"**Beta:** {beta}")
         st.write(f"**Alpha:** {alpha}")
         sortino_ratio = np.mean(returns) / np.std(returns[returns < 0])
         st.write(f"**Sortino Ratio:** {sortino_ratio}")
     except Exception as e:
         logger.error(f"Error in risk analysis: {e}")
-        st.error("An error occurred while performing risk analysis. Please try again later.")
+        st.error(f"An error occurred while performing risk analysis: {e}")
+
 
 def calculate_beta_alpha(returns, start_date, end_date):
     try:
         market_data = yf.download('SPY', start=start_date, end=end_date)['Close'].pct_change().dropna()
+        if market_data.empty:
+            raise ValueError("No market data available for the specified date range.")
+        
         combined_data = pd.concat([returns, market_data], axis=1).dropna()
+        if combined_data.empty:
+            raise ValueError("No combined data available for the stock and market.")
+        
         combined_data.columns = ['Stock', 'Market']
         covariance = np.cov(combined_data['Stock'], combined_data['Market'])[0][1]
         beta = covariance / np.var(combined_data['Market'])
         alpha = np.mean(combined_data['Stock']) - beta * np.mean(combined_data['Market'])
+        
         return beta, alpha
     except Exception as e:
         logger.error(f"Error calculating beta and alpha: {e}")
-        st.error("An error occurred while calculating beta and alpha. Please try again later.")
+        st.error(f"An error occurred while calculating beta and alpha: {e}")
         return None, None
+
 
 def dividend_analysis(ticker):
     try:
