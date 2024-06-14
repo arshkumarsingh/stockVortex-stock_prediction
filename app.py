@@ -49,7 +49,7 @@ def main():
         choice = st.sidebar.radio("Go to", options)
 
         if choice == "Stock Analysis":
-            stock_analysis()
+            stock_analysis_tabs()
         elif choice == "About Author":
             about_author()
 
@@ -64,7 +64,7 @@ def show_disclaimer():
         st.session_state['disclaimer_accepted'] = True
         st.experimental_rerun()
 
-def stock_analysis():
+def stock_analysis_tabs():
     st.markdown('<p class="font">StockVortex</p>', unsafe_allow_html=True)
     st.write(
         "<p style='color:LightPink ; font-size: 20px;font-family: Garamond ;font-weight: normal;'>Where stocks converge and profits swirl – welcome to StockVortex!</p>",
@@ -94,16 +94,34 @@ def stock_analysis():
                 file_name=f'{ticker}_data.csv',
                 mime='text/csv',
             )
-            display_stock_info(ticker)
-            display_summary_statistics(data)
-            plot_data(data)
-            analyze_data(data)
-            model_summary, predictions = forecast(data, end_date)
-            st.write(model_summary)
-            plot_predictions(data, predictions)
-            indicators.add_technical_indicators(data)  # Call the function from the new module
-            portfolio_analysis()
-            explain_sarimax_results(model_summary)
+
+            tabs = st.tabs(["Stock Information", "Summary Statistics", "Data Visualization", "Data Analysis", "Forecast", "Portfolio Analysis"])
+            
+            with tabs[0]:
+                display_stock_info(ticker)
+                about_author()
+                
+            with tabs[1]:
+                display_summary_statistics(data)
+                about_author()
+                
+            with tabs[2]:
+                plot_data(data)
+                about_author()
+                
+            with tabs[3]:
+                analyze_data(data)
+                about_author()
+                
+            with tabs[4]:
+                model_summary, predictions = forecast(data, end_date)
+                st.write(model_summary)
+                plot_predictions(data, predictions)
+                about_author()
+                
+            with tabs[5]:
+                portfolio_analysis()
+                about_author()
         else:
             st.error("No data found for the selected parameters.")
     
