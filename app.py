@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit_modal import Modal
 import yfinance as yf
 import pandas as pd
 import plotly.express as px
@@ -39,79 +38,77 @@ def apply_custom_css():
 def main():
     apply_custom_css()
     
-    st.sidebar.title("Navigation")
-    options = ["Stock Analysis", "About Author"]
-    choice = st.sidebar.radio("Go to", options)
-
-    if choice == "Stock Analysis":
-        stock_analysis()
-    elif choice == "About Author":
-        about_author()
-
-def show_disclaimer():
-    modal = Modal("Disclaimer", 600, 400)
-    with modal.container():
-        st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Disclaimer</p>", unsafe_allow_html=True)
-        st.write("""
-            The information provided by StockVortex is for educational purposes only and should not be considered as financial advice.
-            Trading stocks involves risk, and you should consult with a licensed financial advisor before making any investment decisions.
-            StockVortex and its creators are not responsible for any financial losses you may incur.
-        """)
-        if st.button("I Understand and Accept"):
-            st.session_state['disclaimer_accepted'] = True
-            st.experimental_rerun()
-
-def stock_analysis():
     if 'disclaimer_accepted' not in st.session_state:
         st.session_state['disclaimer_accepted'] = False
 
     if not st.session_state['disclaimer_accepted']:
         show_disclaimer()
     else:
-        st.markdown('<p class="font">StockVortex</p>', unsafe_allow_html=True)
-        st.write(
-            "<p style='color:LightPink ; font-size: 20px;font-family: Garamond ;font-weight: normal;'>Where stocks converge and profits swirl – welcome to StockVortex!</p>",
-            unsafe_allow_html=True,
-        )
-        st.image("https://media.tenor.com/dPYNJASNrIkAAAAi/pepe-money-rain.gif")
+        st.sidebar.title("Navigation")
+        options = ["Stock Analysis", "About Author"]
+        choice = st.sidebar.radio("Go to", options)
 
-        start_date, end_date, ticker, custom_ticker = user_inputs()
-        if custom_ticker:
-            ticker = custom_ticker.upper()
+        if choice == "Stock Analysis":
+            stock_analysis()
+        elif choice == "About Author":
+            about_author()
 
-        if start_date >= end_date:
-            st.error("End date must be after start date.")
-            return
-        
-        if st.button('Fetch Data'):
-            with st.spinner('Fetching data...'):
-                data = fetch_data(ticker, start_date, end_date)
-        
-            if not data.empty:
-                st.success('Data fetched successfully!')
-                st.write(f'Data from {start_date} to {end_date}')
-                st.write(data)
-                st.download_button(
-                    label="Download data as CSV",
-                    data=data.to_csv().encode('utf-8'),
-                    file_name=f'{ticker}_data.csv',
-                    mime='text/csv',
-                )
-                display_stock_info(ticker)
-                display_summary_statistics(data)
-                plot_data(data)
-                analyze_data(data)
-                model_summary, predictions = forecast(data, end_date)
-                st.write(model_summary)
-                plot_predictions(data, predictions)
-                indicators.add_technical_indicators(data)  # Call the function from the new module
-                portfolio_analysis()
-                explain_sarimax_results(model_summary)
-            else:
-                st.error("No data found for the selected parameters.")
-        
-        if st.button('Refresh Data'):
-            st.experimental_rerun()
+def show_disclaimer():
+    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Disclaimer</p>", unsafe_allow_html=True)
+    st.write("""
+        The information provided by StockVortex is for educational purposes only and should not be considered as financial advice.
+        Trading stocks involves risk, and you should consult with a licensed financial advisor before making any investment decisions.
+        StockVortex and its creators are not responsible for any financial losses you may incur.
+    """)
+    if st.button("I Understand and Accept"):
+        st.session_state['disclaimer_accepted'] = True
+        st.experimental_rerun()
+
+def stock_analysis():
+    st.markdown('<p class="font">StockVortex</p>', unsafe_allow_html=True)
+    st.write(
+        "<p style='color:LightPink ; font-size: 20px;font-family: Garamond ;font-weight: normal;'>Where stocks converge and profits swirl – welcome to StockVortex!</p>",
+        unsafe_allow_html=True,
+    )
+    st.image("https://media.tenor.com/dPYNJASNrIkAAAAi/pepe-money-rain.gif")
+
+    start_date, end_date, ticker, custom_ticker = user_inputs()
+    if custom_ticker:
+        ticker = custom_ticker.upper()
+
+    if start_date >= end_date:
+        st.error("End date must be after start date.")
+        return
+    
+    if st.button('Fetch Data'):
+        with st.spinner('Fetching data...'):
+            data = fetch_data(ticker, start_date, end_date)
+    
+        if not data.empty:
+            st.success('Data fetched successfully!')
+            st.write(f'Data from {start_date} to {end_date}')
+            st.write(data)
+            st.download_button(
+                label="Download data as CSV",
+                data=data.to_csv().encode('utf-8'),
+                file_name=f'{ticker}_data.csv',
+                mime='text/csv',
+            )
+            display_stock_info(ticker)
+            display_summary_statistics(data)
+            plot_data(data)
+            analyze_data(data)
+            model_summary, predictions = forecast(data, end_date)
+            st.write(model_summary)
+            plot_predictions(data, predictions)
+            indicators.add_technical_indicators(data)  # Call the function from the new module
+            portfolio_analysis()
+            explain_sarimax_results(model_summary)
+        else:
+            st.error("No data found for the selected parameters.")
+    
+    if st.button('Refresh Data'):
+        st.experimental_rerun()
 
 def user_inputs():
     st.sidebar.header('Parameters')
