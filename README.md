@@ -3,6 +3,7 @@
 StockVortex is a comprehensive web application built with Streamlit that provides a wide array of features for stock analysis, including fetching historical stock data, visualizing stock prices, performing technical analysis, risk analysis, forecasting, and more. This application is designed to help users make informed investment decisions.
 
 ## Table of Contents
+
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -58,13 +59,13 @@ To run StockVortex locally, follow these steps:
 ## Usage
 
 1. **Disclaimer**: Upon starting the application, users will be presented with a disclaimer. Accept the disclaimer to proceed to the main page.
-   
+
 2. **Main Page**: Select the desired time period and stock ticker from the sidebar. Optionally, set a custom date range.
-   
+
 3. **Fetch Data**: Click the "Fetch Data" button to retrieve and display the stock data.
-   
+
 4. **Analyze Data**: Use the provided options to perform various analyses and visualizations on the fetched stock data.
-   
+
 5. **Explore Additional Features**: Navigate through various sections such as technical indicators, portfolio analysis, risk analysis, dividend analysis, and more to gain deeper insights.
 
 ## License
@@ -74,8 +75,8 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## Author
 
 - **Shelly Bhalla**
-   - [LinkedIn](https://www.linkedin.com/in/shelly-bhalla-58a7271b6)
-   - [GitHub](https://github.com/Shellybhalla13)
+  - [LinkedIn](https://www.linkedin.com/in/shelly-bhalla-58a7271b6)
+  - [GitHub](https://github.com/Shellybhalla13)
 
 Feel free to connect on LinkedIn and explore other projects on GitHub!
 
