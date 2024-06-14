@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_modal import Modal
 import yfinance as yf
 import pandas as pd
 import plotly.express as px
@@ -39,26 +40,26 @@ def main():
     apply_custom_css()
     
     st.sidebar.title("Navigation")
-    options = ["Disclaimer", "Stock Analysis", "About Author"]
+    options = ["Stock Analysis", "About Author"]
     choice = st.sidebar.radio("Go to", options)
 
-    if choice == "Disclaimer":
-        show_disclaimer()
-    elif choice == "Stock Analysis":
+    if choice == "Stock Analysis":
         stock_analysis()
     elif choice == "About Author":
         about_author()
 
 def show_disclaimer():
-    st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Disclaimer</p>", unsafe_allow_html=True)
-    st.write("""
-        The information provided by StockVortex is for educational purposes only and should not be considered as financial advice.
-        Trading stocks involves risk, and you should consult with a licensed financial advisor before making any investment decisions.
-        StockVortex and its creators are not responsible for any financial losses you may incur.
-    """)
-    if st.button("I Understand and Accept"):
-        st.session_state['disclaimer_accepted'] = True
-        st.experimental_rerun()
+    modal = Modal("Disclaimer", 600, 400)
+    with modal.container():
+        st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Disclaimer</p>", unsafe_allow_html=True)
+        st.write("""
+            The information provided by StockVortex is for educational purposes only and should not be considered as financial advice.
+            Trading stocks involves risk, and you should consult with a licensed financial advisor before making any investment decisions.
+            StockVortex and its creators are not responsible for any financial losses you may incur.
+        """)
+        if st.button("I Understand and Accept"):
+            st.session_state['disclaimer_accepted'] = True
+            st.experimental_rerun()
 
 def stock_analysis():
     if 'disclaimer_accepted' not in st.session_state:
