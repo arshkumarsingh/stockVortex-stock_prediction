@@ -14,63 +14,39 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Function to apply custom CSS
+def apply_custom_css():
+    st.markdown(
+        """
+        <style>
+        .main {
+            background-color: #0F1126;
+            color: #FFFFFF;
+        }
+        .sidebar .sidebar-content {
+            background-color: #431875;
+        }
+        .font {
+            font-size:50px ; font-weight: bold; font-family: 'Courier New'; color: #DB7093;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
 def main():
-    try:
-        if 'disclaimer_accepted' not in st.session_state:
-            st.session_state['disclaimer_accepted'] = False
+    apply_custom_css()
+    
+    st.sidebar.title("Navigation")
+    options = ["Disclaimer", "Stock Analysis", "About Author"]
+    choice = st.sidebar.radio("Go to", options)
 
-        if not st.session_state['disclaimer_accepted']:
-            show_disclaimer()
-        else:
-            st.markdown(
-                """ <style> .font { font-size:50px ; font-weight: bold; font-family: 'Courier New'; color: #DB7093;} </style> """,
-                unsafe_allow_html=True,
-            )
-            st.markdown('<p class="font">StockVortex</p>', unsafe_allow_html=True)
-            st.write(
-                "<p style='color:LightPink ; font-size: 20px;font-family: Garamond ;font-weight: normal;'>Where stocks converge and profits swirl – welcome to StockVortex!</p>",
-                unsafe_allow_html=True,
-            )
-            st.image("https://media.tenor.com/dPYNJASNrIkAAAAi/pepe-money-rain.gif")
-
-            start_date, end_date, ticker, custom_ticker = user_inputs()
-            if custom_ticker:
-                ticker = custom_ticker.upper()
-
-            if start_date >= end_date:
-                st.error("End date must be after start date.")
-                return
-            
-            if st.button('Fetch Data'):
-                with st.spinner('Fetching data...'):
-                    data = fetch_data(ticker, start_date, end_date)
-            
-                if not data.empty:
-                    st.success('Data fetched successfully!')
-                    st.write(f'Data from {start_date} to {end_date}')
-                    st.write(data)
-                    st.download_button(
-                        label="Download data as CSV",
-                        data=data.to_csv().encode('utf-8'),
-                        file_name=f'{ticker}_data.csv',
-                        mime='text/csv',
-                    )
-                    display_stock_info(ticker)
-                    display_summary_statistics(data)
-                    plot_data(data)
-                    analyze_data(data)
-                    model_summary, predictions = forecast(data, end_date)
-                    st.write(model_summary)
-                    plot_predictions(data, predictions)
-                    add_technical_indicators(data)
-                    portfolio_analysis()
-                    explain_sarimax_results(model_summary)
-                else:
-                    st.error("No data found for the selected parameters.")
-            about_author()
-    except Exception as e:
-        logger.error(f"Error in main execution: {e}")
-        st.error(f"An error occurred: {e}")
+    if choice == "Disclaimer":
+        show_disclaimer()
+    elif choice == "Stock Analysis":
+        stock_analysis()
+    elif choice == "About Author":
+        about_author()
 
 def show_disclaimer():
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Disclaimer</p>", unsafe_allow_html=True)
@@ -82,6 +58,58 @@ def show_disclaimer():
     if st.button("I Understand and Accept"):
         st.session_state['disclaimer_accepted'] = True
         st.experimental_rerun()
+
+def stock_analysis():
+    if 'disclaimer_accepted' not in st.session_state:
+        st.session_state['disclaimer_accepted'] = False
+
+    if not st.session_state['disclaimer_accepted']:
+        show_disclaimer()
+    else:
+        st.markdown('<p class="font">StockVortex</p>', unsafe_allow_html=True)
+        st.write(
+            "<p style='color:LightPink ; font-size: 20px;font-family: Garamond ;font-weight: normal;'>Where stocks converge and profits swirl – welcome to StockVortex!</p>",
+            unsafe_allow_html=True,
+        )
+        st.image("https://media.tenor.com/dPYNJASNrIkAAAAi/pepe-money-rain.gif")
+
+        start_date, end_date, ticker, custom_ticker = user_inputs()
+        if custom_ticker:
+            ticker = custom_ticker.upper()
+
+        if start_date >= end_date:
+            st.error("End date must be after start date.")
+            return
+        
+        if st.button('Fetch Data'):
+            with st.spinner('Fetching data...'):
+                data = fetch_data(ticker, start_date, end_date)
+        
+            if not data.empty:
+                st.success('Data fetched successfully!')
+                st.write(f'Data from {start_date} to {end_date}')
+                st.write(data)
+                st.download_button(
+                    label="Download data as CSV",
+                    data=data.to_csv().encode('utf-8'),
+                    file_name=f'{ticker}_data.csv',
+                    mime='text/csv',
+                )
+                display_stock_info(ticker)
+                display_summary_statistics(data)
+                plot_data(data)
+                analyze_data(data)
+                model_summary, predictions = forecast(data, end_date)
+                st.write(model_summary)
+                plot_predictions(data, predictions)
+                add_technical_indicators(data)
+                portfolio_analysis()
+                explain_sarimax_results(model_summary)
+            else:
+                st.error("No data found for the selected parameters.")
+        
+        if st.button('Refresh Data'):
+            st.experimental_rerun()
 
 def user_inputs():
     st.sidebar.header('Parameters')
@@ -198,7 +226,7 @@ def analyze_data(data):
         plot_decomposition(data, decomposition)
     except Exception as e:
         logger.error(f"Error analyzing data: {e}")
-        st.error(f"Error analyzing data: {e}")
+        st.error(f"Error analyzing data: {e} ")
 
 def plot_decomposition(data, decomposition):
     try:
@@ -207,7 +235,7 @@ def plot_decomposition(data, decomposition):
         st.plotly_chart(px.line(x=data['Date'], y=decomposition.resid, title='Residuals', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Red', line_dash='dot'))
     except Exception as e:
         logger.error(f"Error plotting decomposition: {e}")
-        st.error(f"Error plotting decomposition: {e}")
+        st.error(f"Error plotting decomposition: {e} ")
 
 def forecast(data, end_date):
     try:
@@ -234,7 +262,7 @@ def forecast(data, end_date):
         return model.summary(), predictions
     except Exception as e:
         logger.error(f"Error in forecasting: {e}")
-        st.error(f"Error in forecasting: {e}")
+        st.error(f"Error in forecasting: {e} ")
 
 def plot_predictions(data, predictions):
     try:
@@ -249,7 +277,7 @@ def plot_predictions(data, predictions):
             st.write(px.line(x=predictions['Date'], y=predictions['predicted_mean'], title='Predicted', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Red'))
     except Exception as e:
         logger.error(f"Error plotting predictions: {e}")
-        st.error(f"Error plotting predictions: {e}")
+        st.error(f"Error plotting predictions: {e} ")
 
 def add_technical_indicators(data):
     try:
