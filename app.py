@@ -17,6 +17,17 @@ logger = logging.getLogger(__name__)
 
 # Function to apply custom CSS
 def apply_custom_css():
+    """
+    Applies custom CSS styles to the Streamlit app.
+
+    This function uses the `st.markdown` function from the Streamlit library to inject custom CSS styles into the app. The CSS styles define the background color, text color, and font properties for the main container, sidebar content, and font styles.
+
+    Parameters:
+    None
+
+    Returns:
+    None
+    """
     st.markdown(
         """
         <style>
@@ -36,6 +47,27 @@ def apply_custom_css():
     )
 
 def main():
+    """
+    The main function of the program.
+
+    This function is responsible for running the main logic of the program. It first applies the custom CSS to the Streamlit application.
+
+    It then checks if the 'disclaimer_accepted' key is present in the session state. If it is not present, it sets the value of 'disclaimer_accepted' to False in the session state.
+
+    If the 'disclaimer_accepted' is False, it calls the show_disclaimer() function.
+
+    If the 'disclaimer_accepted' is True, it displays a navigation menu in the sidebar of the Streamlit application. The menu includes two options: "Stock Analysis" and "About Author".
+
+    It then retrieves the user's choice from the radio button in the sidebar. If the choice is "Stock Analysis", it calls the stock_analysis() function.
+
+    If the choice is "About Author", it calls the about_author() function.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
     apply_custom_css()
     
     if 'disclaimer_accepted' not in st.session_state:
@@ -54,6 +86,15 @@ def main():
             about_author()
 
 def show_disclaimer():
+    """
+    Displays a disclaimer to the user regarding the use of StockVortex. The disclaimer informs the user that the information provided by StockVortex is for educational purposes only and should not be considered as financial advice. It also reminds the user that trading stocks involves risk and that they should consult with a licensed financial advisor before making any investment decisions. The disclaimer includes a button that allows the user to accept the disclaimer and proceed. 
+
+    Parameters:
+    None
+
+    Returns:
+    None
+    """
     st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Disclaimer</p>", unsafe_allow_html=True)
     st.write("""
         The information provided by StockVortex is for educational purposes only and should not be considered as financial advice.
@@ -65,6 +106,36 @@ def show_disclaimer():
         st.experimental_rerun()
 
 def stock_analysis():
+    """
+    This function performs stock analysis using user inputs and displays the fetched data, summary statistics, plots, and predictions.
+
+    Parameters:
+    None
+
+    Returns:
+    None
+
+    Side Effects:
+    - Displays the stock analysis page with the specified styling and image.
+    - Prompts the user to input start and end dates, ticker symbol, and custom ticker symbol.
+    - Validates that the end date is after the start date.
+    - Fetches data using the fetch_data function and displays success message and data.
+    - Provides a download button to download the data as a CSV file.
+    - Displays stock information using the display_stock_info function.
+    - Displays summary statistics using the display_summary_statistics function.
+    - Plots data using the plot_data function.
+    - Analyzes data using the analyze_data function.
+    - Performs forecasting using the forecast function and displays the model summary and predictions.
+    - Plots the predictions using the plot_predictions function.
+    - Adds technical indicators using the add_technical_indicators function from the indicators module.
+    - Performs portfolio analysis.
+    - Explains SARIMAX results using the explain_sarimax_results function.
+    - Refreshes the data if the "Refresh Data" button is clicked.
+
+    Note:
+    - The function assumes that the necessary modules and functions are imported and defined elsewhere in the codebase.
+    - The function relies on the st.session_state dictionary to store the user's input and the status of the disclaimer acceptance.
+    """
     st.markdown('<p class="font">StockVortex</p>', unsafe_allow_html=True)
     st.write(
         "<p style='color:LightPink ; font-size: 20px;font-family: Garamond ;font-weight: normal;'>Where stocks converge and profits swirl – welcome to StockVortex!</p>",
@@ -111,6 +182,11 @@ def stock_analysis():
         st.experimental_rerun()
 
 def user_inputs():
+    """
+    Function for user inputs including selecting date ranges, company, and custom ticker.
+    
+    This function returns the start date, end date, selected ticker (or custom ticker if provided), and None if no custom ticker is entered.
+    """
     with st.sidebar:
         st.header('Parameters')
         date_ranges = {
@@ -184,6 +260,19 @@ def display_stock_info(ticker):
         st.error(f"An error occurred while fetching stock information: {e}")
 
 def display_summary_statistics(data):
+    """
+    Displays the summary statistics of the given data.
+
+    Parameters:
+        data (pandas.DataFrame): The data to display the summary statistics for.
+
+    Returns:
+        None
+
+    Raises:
+        Exception: If an error occurs while displaying the summary statistics.
+
+    """
     try:
         st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Summary Statistics</p>", unsafe_allow_html=True)
         st.write(data.describe())
@@ -192,6 +281,24 @@ def display_summary_statistics(data):
         st.error(f"Error displaying summary statistics: {e}")
 
 def plot_data(data):
+    """
+    Plots the data using Plotly and Streamlit.
+
+    Args:
+        data (pandas.DataFrame): The data to be plotted. It must have columns 'Date' and 'Close'.
+
+    Returns:
+        None
+
+    Raises:
+        Exception: If there is an error while plotting the data.
+
+    This function first writes a heading to the Streamlit app using the 'st.write' function. It then writes a subheading for the line plot and creates a line plot using the 'px.line' function from Plotly Express. The line plot shows the closing price of the stock over time. The 'st.plotly_chart' function is used to display the line plot.
+
+    After that, it writes a subheading for the candlestick chart and creates a candlestick chart using the 'go.Figure' function from Plotly. The candlestick chart shows the opening, high, low, and closing prices of the stock over time. The 'st.plotly_chart' function is used to display the candlestick chart.
+
+    If there is an error while plotting the data, an error message is logged and displayed using the 'logger.error' and 'st.error' functions respectively.
+    """
     try:
         st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Data Visualization</p>", unsafe_allow_html=True)
         st.write("<p style='color:lightPink; font-size: 25px; font-family: Courier New;font-weight: normal;'>Plot of the Data</p>", unsafe_allow_html=True)
@@ -206,6 +313,18 @@ def plot_data(data):
         st.error(f"Error plotting data: {e}")
 
 def analyze_data(data):
+    """
+    Analyzes the given data by selecting a column, checking its stationarity, and decomposing it.
+
+    Parameters:
+    - data (pandas.DataFrame): The data to be analyzed. The first column is assumed to be the index column.
+
+    Returns:
+    - None
+
+    Raises:
+    - Exception: If there is an error during the analysis process. The error message will be logged and displayed as an error message in the Streamlit app.
+    """
     try:
         columns = data.columns[1:]
         column = st.selectbox('Select column', columns, key='column_select', help="Select the column you want to analyze for stationarity and decomposition.")
@@ -226,6 +345,19 @@ def analyze_data(data):
         st.error(f"Error analyzing data: {e} ")
 
 def plot_decomposition(data, decomposition):
+    """
+    Plots the decomposition of the given data using Plotly.
+
+    Args:
+        data (pandas.DataFrame): The input data containing the 'Date' column.
+        decomposition (statsmodels.tsa.seasonal.DecomposeResult): The decomposition result obtained from the seasonal_decompose function.
+
+    Raises:
+        Exception: If there is an error while plotting the decomposition.
+
+    Returns:
+        None
+    """
     try:
         st.plotly_chart(px.line(x=data['Date'], y=decomposition.trend, title='Trend', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Blue'))
         st.plotly_chart(px.line(x=data['Date'], y=decomposition.seasonal, title='Seasonality', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Green'))
@@ -235,41 +367,70 @@ def plot_decomposition(data, decomposition):
         st.error(f"Error plotting decomposition: {e} ")
 
 def forecast(data, end_date):
+    """
+    This function performs forecasting on a given dataset using the SARIMAX model.
+
+    Args:
+        data (pandas.DataFrame): The dataset to perform forecasting on. It should have a 'Date' column and a 'Close' column.
+        end_date (str): The end date for the forecast. It should be in the format 'YYYY-MM-DD'.
+
+    Returns:
+        tuple: A tuple containing the model summary and the forecasted predictions. The model summary is a string containing the summary statistics of the fitted SARIMAX model. The forecasted predictions is a pandas DataFrame containing the forecasted values along with the corresponding dates.
+
+    Raises:
+        Exception: If there is an error while fitting the SARIMAX model or getting the forecasted predictions.
+
+    """
     try:
+        # Get the values for the SARIMAX model parameters from the user input
         p = st.slider('Select value of p', 0, 5, 2, help="AR order: The number of lag observations included in the model.")
         d = st.slider('Select value of d', 0, 5, 1, help="Differencing order: The number of times the raw observations are differenced.")
         q = st.slider('Select value of q', 0, 5, 2, help="MA order: The size of the moving average window.")
         seasonal_order = st.number_input('Select value of seasonal p', 0, 24, 12, help="Seasonal AR order: The number of lag observations included in the seasonal part of the model.")
 
+        # Check if the input data is not empty
         if not data.empty:
+            # Create an instance of the SARIMAX model with the specified parameters
             model = sm.tsa.statespace.SARIMAX(data.iloc[:, 1], order=(p, d, q), seasonal_order=(p, d, q, seasonal_order))
+            # Fit the model to the input data
             model = model.fit()
 
+            # Write the model summary to the Streamlit app
             st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Model Summary</p>", unsafe_allow_html=True)
             st.write(model.summary())
             st.write('---')
-            st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Forecasting the Data</p>", unsafe_allow_html=True)
 
+            # Get the number of days for the forecast from the user input
             forecast_period = st.number_input('Select number of days for prediction', 1, 365, 10, help="Number of days into the future you want to forecast.")
 
+            # Check if the forecast period is valid
             if forecast_period > 0:
+                # Calculate the start and end indices for the forecast
                 start = len(data)
                 end = start + forecast_period - 1
+
+                # Get the predicted values for the forecast period
                 predictions = model.get_prediction(start=start, end=end)
                 predictions = predictions.predicted_mean
 
+                # Check if the predictions are not empty
                 if not predictions.empty:
+                    # Set the index of the predictions DataFrame to the corresponding dates
                     predictions.index = pd.date_range(start=end_date, periods=len(predictions), freq='D')
+                    # Convert the predictions DataFrame to a DataFrame with the 'Date' column
                     predictions = pd.DataFrame(predictions)
                     predictions.insert(0, 'Date', predictions.index)
                     predictions.reset_index(drop=True, inplace=True)
 
+                    # Write the predictions and actual data to the Streamlit app
                     st.write('Predictions', predictions)
                     st.write('Actual Data', data)
                     st.write('---')
 
+                    # Return the model summary and predictions
                     return model.summary(), predictions
 
+    # Handle any errors that occur during the forecasting process
     except Exception as e:
         logger.error(f"Error in forecasting: {e}")
         st.error(f"Error in forecasting: {e} ")
