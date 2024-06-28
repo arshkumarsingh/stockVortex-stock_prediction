@@ -207,20 +207,18 @@ def plot_data(data):
 
 def analyze_data(data):
     try:
-        column = st.selectbox(
-            'Select column',
-            data.columns[1:],
-            help="Select the column you want to analyze for stationarity and decomposition."
-        )
-        data = data[['Date', column]]
+        columns = data.columns[1:]
+        column = st.selectbox('Select column', columns, key='column_select', help="Select the column you want to analyze for stationarity and decomposition.")
+        data = data.set_index('Date')[column].to_frame()
         st.write('Selected Data')
         st.write(data)
         st.write('Data Stationarity')
-        stationarity = adfuller(data[column])[1] < 0.05
+        adf_result = adfuller(data[column])
+        stationarity = adf_result[1] < 0.05
         st.write(f'Stationary: {stationarity}')
         st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Decomposition of Data</p>", unsafe_allow_html=True)
         decomposition = seasonal_decompose(data[column], model='additive', period=12)
-        st.write(decomposition.plot())
+        st.plotly_chart(decomposition.plot())
         st.write('Evaluating Plots')
         plot_decomposition(data, decomposition)
     except Exception as e:
