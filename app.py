@@ -111,49 +111,49 @@ def stock_analysis():
         st.experimental_rerun()
 
 def user_inputs():
-    st.sidebar.header('Parameters')
-    # Default date ranges
-    today = date.today()
-    one_year_ago = today - timedelta(days=365)
-    two_years_ago = today - timedelta(days=730)
-    
-    date_ranges = {
-        "Past Year": (one_year_ago, today),
-        "Past Two Years": (two_years_ago, today),
-        "Custom": None
-    }
-    
-    # Dropdown for date range selection
-    date_range_option = st.sidebar.selectbox(
-        "Select date range",
-        options=list(date_ranges.keys()),
-        help="Select the time period for which you want to analyze the stock data."
-    )
-    
-    if date_range_option == "Custom":
-        start_date, end_date = st.sidebar.slider(
+    with st.sidebar:
+        st.header('Parameters')
+        date_ranges = {
+            "Past Year": (date.today() - timedelta(days=365), date.today()),
+            "Past Two Years": (date.today() - timedelta(days=730), date.today()),
+            "Custom": None
+        }
+        date_range_option = st.selectbox(
+            "Select date range",
+            options=date_ranges.keys(),
+            help="Select the time period for which you want to analyze the stock data."
+        )
+        start_date, end_date = date_ranges[date_range_option] if date_range_option != "Custom" else st.slider(
             'Select date range',
             value=(date(2020, 1, 1), date(2020, 12, 31)),
             format="YYYY-MM-DD",
             help="Select a custom date range for the stock data."
         )
-    else:
-        start_date, end_date = date_ranges[date_range_option]
-    
-    ticker_list = ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"]
-    ticker = st.sidebar.selectbox(
-        'Company',
-        ticker_list,
-        help="Select a company from the list to fetch its stock data."
-    )
-    custom_ticker = st.sidebar.text_input(
-        'Or enter a custom ticker (overrides selection above)',
-        value='',
-        help="Enter a custom stock ticker symbol to fetch data for a specific company."
-    )
-    return start_date, end_date, ticker, custom_ticker
+        ticker_list = ["AAPL", "MSFT", "GOOGL", "META", "TSLA", "NVDA", "ADBE", "PYPL", "INTC", "CMCSA", "NFLX", "PEP"]
+        ticker = st.selectbox(
+            'Company',
+            ticker_list,
+            help="Select a company from the list to fetch its stock data."
+        )
+        custom_ticker = st.text_input(
+            'Or enter a custom ticker (overrides selection above)',
+            value='',
+            help="Enter a custom stock ticker symbol to fetch data for a specific company."
+        )
+    return start_date, end_date, ticker.upper() if custom_ticker else ticker, custom_ticker.upper() if custom_ticker else None
 
 def fetch_data(ticker, start_date, end_date):
+    """
+    Fetches data for a given stock ticker within a specified date range.
+
+    Parameters:
+    ticker (str): The stock ticker symbol.
+    start_date (str): The start date for fetching the data.
+    end_date (str): The end date for fetching the data.
+
+    Returns:
+    pandas.DataFrame: The fetched stock data.
+    """
     try:
         data = yf.download(ticker, start=start_date, end=end_date)
         data.reset_index(inplace=True)
