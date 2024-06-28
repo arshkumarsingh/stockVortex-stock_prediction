@@ -242,40 +242,63 @@ def forecast(data, end_date):
         d = st.slider('Select value of d', 0, 5, 1, help="Differencing order: The number of times the raw observations are differenced.")
         q = st.slider('Select value of q', 0, 5, 2, help="MA order: The size of the moving average window.")
         seasonal_order = st.number_input('Select value of seasonal p', 0, 24, 12, help="Seasonal AR order: The number of lag observations included in the seasonal part of the model.")
-        model = sm.tsa.statespace.SARIMAX(data.iloc[:, 1], order=(p, d, q), seasonal_order=(p, d, q, seasonal_order))
-        model = model.fit()
-        st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Model Summary</p>", unsafe_allow_html=True)
-        st.write(model.summary())
-        st.write('---')
-        st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Forecasting the Data</p>", unsafe_allow_html=True)
-        forecast_period = st.number_input('Select number of days for prediction', 1, 365, 10, help="Number of days into the future you want to forecast.")
-        predictions = model.get_prediction(start=len(data), end=len(data) + forecast_period - 1)
-        predictions = predictions.predicted_mean
-        predictions.index = pd.date_range(start=end_date, periods=len(predictions), freq='D')
-        predictions = pd.DataFrame(predictions)
-        predictions.insert(0, 'Date', predictions.index)
-        predictions.reset_index(drop=True, inplace=True)
-        st.write('Predictions', predictions)
-        st.write('Actual Data', data)
-        st.write('---')
-        return model.summary(), predictions
+
+        if not data.empty:
+            model = sm.tsa.statespace.SARIMAX(data.iloc[:, 1], order=(p, d, q), seasonal_order=(p, d, q, seasonal_order))
+            model = model.fit()
+
+            st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Model Summary</p>", unsafe_allow_html=True)
+            st.write(model.summary())
+            st.write('---')
+            st.write("<p style='color:HotPink; font-size: 40px; font-family: Courier New;font-weight: bold;'>Forecasting the Data</p>", unsafe_allow_html=True)
+
+            forecast_period = st.number_input('Select number of days for prediction', 1, 365, 10, help="Number of days into the future you want to forecast.")
+
+            if forecast_period > 0:
+                start = len(data)
+                end = start + forecast_period - 1
+                predictions = model.get_prediction(start=start, end=end)
+                predictions = predictions.predicted_mean
+
+                if not predictions.empty:
+                    predictions.index = pd.date_range(start=end_date, periods=len(predictions), freq='D')
+                    predictions = pd.DataFrame(predictions)
+                    predictions.insert(0, 'Date', predictions.index)
+                    predictions.reset_index(drop=True, inplace=True)
+
+                    st.write('Predictions', predictions)
+                    st.write('Actual Data', data)
+                    st.write('---')
+
+                    return model.summary(), predictions
+
     except Exception as e:
         logger.error(f"Error in forecasting: {e}")
         st.error(f"Error in forecasting: {e} ")
 
-def plot_predictions(data, predictions):
+def plot_predictions(data: pd.DataFrame, predictions: pd.DataFrame) -> None:
+    """
+    Plot actual and predicted data.
+
+    Args:
+        data (pd.DataFrame): DataFrame containing actual data.
+        predictions (pd.DataFrame): DataFrame containing predicted data.
+
+    Returns:
+        None
+    """
     try:
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data['Date'], y=data.iloc[:, 1], mode='lines', name='Actual', line=dict(color='blue')))
-        fig.add_trace(go.Scatter(x=predictions['Date'], y=predictions['predicted_mean'], mode='lines', name='Predicted', line=dict(color='red')))
+        fig.add_trace(go.Scatter(x=data.index, y=data.iloc[:, 0], mode='lines', name='Actual', line=dict(color='blue')))
+        fig.add_trace(go.Scatter(x=predictions.index, y=predictions['predicted_mean'], mode='lines', name='Predicted', line=dict(color='red')))
         fig.update_layout(title='Actual vs Predicted', xaxis_title='Date', yaxis_title='Price', width=800, height=400)
         st.plotly_chart(fig)
         show_plots = st.button('Show separate plots')
         if show_plots:
-            st.write(px.line(x=data['Date'], y=data.iloc[:, 1], title='Actual', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Blue'))
-            st.write(px.line(x=predictions['Date'], y=predictions['predicted_mean'], title='Predicted', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Red'))
+            st.write(px.line(x=data.index, y=data.iloc[:, 0], title='Actual', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Blue'))
+            st.write(px.line(x=predictions.index, y=predictions['predicted_mean'], title='Predicted', labels={'x': 'Date', 'y': 'Price'}).update_traces(line_color='Red'))
     except Exception as e:
-        logger.error(f"Error plotting predictions: {e}")
+        logger.exception(f"Error plotting predictions: {e}")
         st.error(f"Error plotting predictions: {e} ")
 
 def portfolio_analysis():
